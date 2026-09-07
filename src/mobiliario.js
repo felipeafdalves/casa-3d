@@ -1086,7 +1086,7 @@ const pecas = {
     const W = 1.92;
     const h = L / 2;
     const pintura = M(cor);
-    const vidro = new THREE.MeshPhysicalMaterial({ color: '#0e1216', roughness: 0.06, metalness: 0.4, clearcoat: 1, envMapIntensity: 1.2 });
+    const vidro = new THREE.MeshPhysicalMaterial({ color: '#0e1216', roughness: 0.08, metalness: 0.4, clearcoat: 1, envMapIntensity: 0.35 });
     const preto = new THREE.MeshStandardMaterial({ color: '#141516', roughness: 0.7 });
     const cromado = material('inox');
     // perfil (z ao longo do carro, y altura), do fundo traseiro, pela retaguarda, tejadilho e capô até ao fundo dianteiro
