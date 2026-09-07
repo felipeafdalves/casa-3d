@@ -41,6 +41,10 @@ await page.evaluate(() => { document.getElementById('tela-inicial').hidden = tru
 
 const vistas = [
   ['frente', 4.6, -9.0, 0.0, 0, 0.05],
+  ['entrada-escada', 7.0, -8.2, 0.0, 0, 0.1],
+  ['brinquedoteca-bay', 7.3, 0.3, 1.5, 0, 0.0],
+  ['sala-escada', 6.2, 5.3, 1.5, 0.95, 0.12],
+  ['cozinha-escada', 3.0, 10.8, 1.5, Math.PI, 0.05],
   ['varanda-frente', 4.5, -3.8, 1.45, 0, 0],
   ['hall', 2.2, -2.3, 1.5, 0, 0],
   ['brinquedoteca', 6.2, -2.3, 1.5, -0.7, 0],
@@ -119,8 +123,10 @@ async function andar(x, y, nivel, yaw, segundos) {
     return { x: +j.pos.x.toFixed(2), y: +(-j.pos.z).toFixed(2), altura: +j.pos.y.toFixed(2) };
   }, [x, y, nivel, yaw, segundos]);
 }
-const subida = await andar(4.1, 8.0, 1.5, Math.PI / 2, 2.5); // para oeste, ao longo do 1.º lance
-console.log('escada 1.º lance →', subida, subida.altura > 2.7 ? 'OK subiu' : 'FALHOU');
+const subida = await andar(4.2, 8.0, 1.5, Math.PI / 2, 2.5); // para oeste, ao longo do 1.º lance
+console.log('escada 1.º lance →', subida, subida.altura > 2.9 ? 'OK subiu' : 'FALHOU');
+const subida2 = await andar(1.0, 6.7, 2.985, -Math.PI / 2, 3.0); // do patamar para leste, 2.º lance até ao piso superior
+console.log('escada 2.º lance →', subida2, subida2.altura > 4.4 && subida2.x > 4.3 ? 'OK chegou ao superior' : 'FALHOU');
 const parede = await andar(2.2, -1.5, 1.5, Math.PI / 2, 2.0); // para oeste contra a parede do hall
 console.log('parede do hall →', parede, parede.x > 0.6 ? 'OK bloqueou' : 'FALHOU');
 const portaFechada = await andar(2.9, -4.0, 1.45, 0, 2.5); // para norte, porta da frente fechada
@@ -130,7 +136,9 @@ await page.waitForTimeout(800);
 const portaAberta = await andar(2.9, -4.0, 1.45, 0, 2.5);
 console.log("porta aberta →", portaAberta, portaAberta.y > -2.6 ? 'OK passou' : 'FALHOU');
 const descida = await andar(3.9, 6.6, 1.5, Math.PI / 2, 2.5); // para oeste, descendo para o subsolo
-console.log('escada subsolo →', descida, descida.altura < 0.5 ? 'OK desceu' : 'FALHOU');
+console.log('escada subsolo 1.º lance →', descida, descida.altura < 0.5 ? 'OK desceu' : 'FALHOU');
+const descida2 = await andar(0.99, 6.3, 0.323, Math.PI, 2.5); // do patamar para sul, até à garagem
+console.log('escada subsolo 2.º lance →', descida2, descida2.altura < -1.0 && descida2.y < 4.0 ? 'OK chegou à garagem' : 'FALHOU');
 }
 
 // ---- auditoria automática do mobiliário: peças a atravessar paredes, a invadir outro ambiente ou umas dentro das outras

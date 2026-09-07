@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Passeio 3D em primeira pessoa pela casa Verônica e Felipe" />
+    <title>Casa Verônica e Felipe · Passeio 3D</title>
+    <link rel="stylesheet" href="./src/estilo.css" />
+  </head>
+  <body>
+    <canvas id="cena"></canvas>
+
+    <div id="hud">
+      <div id="ambiente-atual">—</div>
+      <div id="mira"></div>
+      <canvas id="minimapa" width="260" height="130"></canvas>
+      <div id="dica">WASD mover · Shift correr · E abrir porta · M mapa · L luz · Q qualidade · T teleporte · F modo foto · Esc solta o mouse</div>
+      <div id="modo-foto" hidden>
+        <b>Modo foto · path tracing</b>
+        <span id="modo-foto-estado">A preparar…</span>
+        <button id="modo-foto-guardar" type="button">Guardar PNG</button>
+      </div>
+    </div>
+
+    <div id="tela-inicial">
+      <div class="cartao">
+        <p class="sobre">PROJETO · VERÔNICA E FELIPE</p>
+        <h1>Passeio 3D pela casa</h1>
+        <p class="texto">
+          Geometria gerada a partir da planta em DWG e acabamentos baseados no projeto de interiores.
+          Ande pela casa em primeira pessoa, suba a escada e visite cada ambiente.
+        </p>
+        <ul class="controles">
+          <li><b>W A S D</b> andar</li>
+          <li><b>Mouse</b> olhar</li>
+          <li><b>Shift</b> correr</li>
+          <li><b>E</b> abrir / fechar portas</li>
+          <li><b>T</b> lista de ambientes (teleporte)</li>
+          <li><b>M</b> mostrar / esconder o mapa</li>
+          <li><b>L</b> dia / noite</li>
+          <li><b>Q</b> qualidade gráfica</li>
+        </ul>
+        <button id="botao-entrar">Entrar na casa</button>
+        <p class="rodape" id="estado-carregamento">A preparar materiais…</p>
+      </div>
+    </div>
+
+    <div id="teleporte" hidden>
+      <div class="cartao">
+        <h2>Ir para…</h2>
+        <div id="lista-ambientes"></div>
+        <p class="rodape">T ou Esc para fechar</p>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
