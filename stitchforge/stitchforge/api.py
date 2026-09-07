@@ -13,6 +13,14 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
+from .formats.brother import (
+    DEFAULT_PES_VERSION,
+    HOOPS,
+    PES_VERSIONS,
+    brother_catalog,
+    hoop_by_name,
+    smallest_hoop,
+)
 from .formats.writer import available_formats, write
 from .models import Design
 from .pipeline.builder import BuildOptions, build_design
@@ -35,6 +43,24 @@ class Job:
     design: Design
     sheet: list[dict]
     warnings: list[str]
+    pes_version: int = DEFAULT_PES_VERSION
+
+
+def resolve_catalog(palette: str):
+    """Catalogo usado na quantizacao.
+
+    O padrao e o catalogo de linhas reais ("fidelidade"), NAO a carta de 64
+    cores da Brother: a carta e apenas o que aparece no visor da maquina, e
+    restringir a arte a ela piora a fidelidade sem nenhum ganho fisico — a
+    linha do cone e a que o operador comprou. A carta so vira restricao real
+    para quem quer que a previa case exatamente com o visor.
+    """
+    if palette != "brother":
+        return CATALOG
+    try:
+        return brother_catalog()
+    except ImportError:
+        return CATALOG
 
 
 JOBS: dict[str, Job] = {}
@@ -47,8 +73,27 @@ def _decode(data: bytes) -> np.ndarray:
     return image
 
 
-def _warnings(design: Design, layers) -> list[str]:
+def _warnings(design: Design, layers, hoop_name: str | None = None) -> list[str]:
     out: list[str] = []
+    stats_size = design.stats()
+    width, height = stats_size["width_mm"], stats_size["height_mm"]
+
+    hoop = hoop_by_name(hoop_name) if hoop_name else None
+    if hoop is not None and not hoop.fits(width, height):
+        smaller = smallest_hoop(width, height)
+        out.append(
+            f"O desenho ({width:.0f}x{height:.0f} mm) nao cabe no bastidor {hoop.name}. "
+            + (
+                f"A maquina recusa o arquivo. Use o bastidor {smaller.name} ou reduza a largura."
+                if smaller
+                else "Nao cabe em nenhum bastidor Brother comum — reduza a largura."
+            )
+        )
+    elif hoop is None and smallest_hoop(width, height) is None:
+        out.append(
+            f"O desenho ({width:.0f}x{height:.0f} mm) e maior que o maior bastidor Brother "
+            "comum (24x36 cm). A maquina vai recusar o arquivo."
+        )
     for layer in layers:
         if layer.delta_e > 10:
             out.append(
@@ -67,8 +112,26 @@ def _warnings(design: Design, layers) -> list[str]:
             f"{stats['trims']} cortes de linha. Cada corte e parada de maquina — "
             "aumente a area minima para eliminar respingos de cor."
         )
-    if max(stats["width_mm"], stats["height_mm"]) > 360:
-        out.append("Maior que qualquer bastidor comum (36 cm). Reduza o tamanho final.")
+    if any(layer.thread.brand == "brother" for layer in layers):
+        out.append(
+            "Paleta restrita a carta Brother: a previa casa com o visor da maquina, mas a "
+            "fidelidade de cor cai — a carta de 64 cores nao tem tons pasteis. Se voce vai "
+            "usar linha Madeira/Isacord de verdade, o modo Fidelidade rende arte melhor."
+        )
+    else:
+        shown = [row.get("machine_display") for row in color_sheet(design, True)]
+        repeated = {name for name in shown if name and shown.count(name) > 1}
+        if repeated:
+            out.append(
+                "No visor da maquina, estas cores aparecem repetidas: "
+                + ", ".join(sorted(repeated))
+                + ". Sao linhas diferentes no cone — siga a ordem da ficha, nao a tela."
+            )
+        out.append(
+            "A Brother mostra no visor a cor mais proxima da carta fixa dela de 64 cores "
+            "(coluna \"no visor\" na ficha). Isso muda so a tela: a linha do cone e a da "
+            "coluna \"linha\"."
+        )
     return out
 
 
@@ -82,10 +145,18 @@ def info() -> dict:
     return {
         "formats": available_formats(),
         "catalog_size": len(CATALOG),
+        "hoops": [
+            {"name": h.name, "width_mm": h.width_mm, "height_mm": h.height_mm} for h in HOOPS
+        ],
+        "pes_versions": list(PES_VERSIONS),
         "defaults": {
             "width_mm": 100,
             "colors": 6,
             "row_spacing_mm": StitchOptions().row_spacing_mm,
+            "format": "pes" if "pes" in available_formats() else "dst",
+            "palette": "fidelity",
+            "hoop": HOOPS[1].name,
+            "pes_version": DEFAULT_PES_VERSION,
         },
     }
 
@@ -102,6 +173,9 @@ async def digitize(
     outline: bool = Form(True),
     underlay: bool = Form(True),
     name: str = Form("stitchforge"),
+    palette: str = Form("fidelity"),
+    hoop: str = Form(""),
+    pes_version: int = Form(DEFAULT_PES_VERSION),
 ) -> JSONResponse:
     data = await file.read()
     if len(data) > MAX_UPLOAD_BYTES:
@@ -110,6 +184,8 @@ async def digitize(
         raise HTTPException(400, "largura final deve ficar entre 10 e 400 mm")
     if not 1 <= colors <= 16:
         raise HTTPException(400, "use de 1 a 16 cores")
+    if pes_version not in PES_VERSIONS:
+        raise HTTPException(400, f"versao de PES invalida; use {list(PES_VERSIONS)}")
 
     prepared = prepare(
         _decode(data),
@@ -121,6 +197,7 @@ async def digitize(
             colors=colors,
             min_area_mm2=min_area_mm2,
             preserve_dark_details=preserve_dark_details,
+            catalog=resolve_catalog(palette),
         ),
     )
     if not layers:
@@ -139,7 +216,12 @@ async def digitize(
     )
 
     job_id = uuid.uuid4().hex[:12]
-    JOBS[job_id] = Job(design=design, sheet=color_sheet(design), warnings=_warnings(design, layers))
+    JOBS[job_id] = Job(
+        design=design,
+        sheet=color_sheet(design, with_machine_display=True),
+        warnings=_warnings(design, layers, hoop or None),
+        pes_version=pes_version,
+    )
     return JSONResponse(
         {
             "job": job_id,
@@ -147,6 +229,9 @@ async def digitize(
             "threads": JOBS[job_id].sheet,
             "warnings": JOBS[job_id].warnings,
             "formats": available_formats(),
+            "hoop": (lambda h: h.name if h else None)(
+                smallest_hoop(design.stats()["width_mm"], design.stats()["height_mm"])
+            ),
         }
     )
 
@@ -179,7 +264,7 @@ def download(job_id: str, fmt: str) -> FileResponse:
     if fmt.lower() not in available_formats():
         raise HTTPException(400, f"formato indisponivel. Use: {', '.join(available_formats())}")
     path = WORK_DIR / f"{job_id}.{fmt.lower()}"
-    write(job.design, path, fmt.lower())
+    write(job.design, path, fmt.lower(), pes_version=job.pes_version)
     return FileResponse(
         path, filename=f"{job.design.name}.{fmt.lower()}", media_type="application/octet-stream"
     )

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from ..models import Design, StitchKind
+from .brother import DEFAULT_PES_VERSION, PES_VERSIONS
 from .dst import write_dst
 
 NATIVE_FORMATS = ("dst",)
@@ -70,7 +71,17 @@ def to_pyembroidery(design: Design):
     return pattern
 
 
-def write(design: Design, path: str | Path, fmt: str | None = None) -> Path:
+def write(
+    design: Design,
+    path: str | Path,
+    fmt: str | None = None,
+    pes_version: int = DEFAULT_PES_VERSION,
+) -> Path:
+    """Grava o desenho. `pes_version` so vale para PES (1 = universal, 6 = novo).
+
+    PES v1 e o padrao porque toda Brother que le PES abre v1; v6 guarda nome
+    de linha e miniatura, mas maquina antiga recusa o arquivo.
+    """
     path = Path(path)
     fmt = (fmt or path.suffix.lstrip(".")).lower()
 
@@ -89,5 +100,10 @@ def write(design: Design, path: str | Path, fmt: str | None = None) -> Path:
             f"'{fmt}' precisa do pacote pyembroidery (pip install pyembroidery)"
         ) from exc
 
-    pyembroidery.write(to_pyembroidery(design), str(path))
+    settings = {}
+    if fmt == "pes":
+        if pes_version not in PES_VERSIONS:
+            raise ValueError(f"versao de PES invalida: {pes_version}. Use {PES_VERSIONS}")
+        settings["version"] = pes_version
+    pyembroidery.write(to_pyembroidery(design), str(path), settings or None)
     return path

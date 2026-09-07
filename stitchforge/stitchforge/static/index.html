@@ -52,14 +52,18 @@
   .dl{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
   .dl a{padding:8px 14px;border:1px solid var(--accent);color:var(--accent);border-radius:8px;
         text-decoration:none;font-weight:600;font-size:.85rem}
+  .dl a.primary{background:var(--accent);color:var(--accent-ink)}
+  select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;
+         background:transparent;color:inherit;font:inherit}
   .note{color:var(--muted);font-size:.8rem;margin-top:14px}
 </style>
 </head>
 <body>
 <header>
   <h1>StitchForge</h1>
-  <p>Converte uma imagem em arquivo de bordado. A previa mostra os pontos que a maquina vai dar —
-     confira antes de baixar: nenhum conversor automatico acerta sozinho.</p>
+  <p>Converte uma imagem em arquivo de bordado <b>.PES</b>, para maquinas Brother. A previa mostra
+     os pontos que a maquina vai dar — confira antes de baixar: nenhum conversor automatico
+     acerta sozinho.</p>
 </header>
 
 <main>
@@ -82,6 +86,26 @@
       <div><label for="minarea">Area minima (mm²)</label><input type="number" id="minarea" value="4" min="0.5" max="50" step="0.5"></div>
     </div>
 
+    <label for="hoop">Bastidor Brother</label>
+    <select id="hoop"></select>
+
+    <div class="row">
+      <div>
+        <label for="palette">Paleta de linhas</label>
+        <select id="palette">
+          <option value="fidelity" selected>Fidelidade (linha real)</option>
+          <option value="brother">Carta Brother (casa com o visor)</option>
+        </select>
+      </div>
+      <div>
+        <label for="pesv">Versao do PES</label>
+        <select id="pesv">
+          <option value="1" selected>v1 — abre em qualquer Brother</option>
+          <option value="6">v6 — guarda nome da linha</option>
+        </select>
+      </div>
+    </div>
+
     <label class="check"><input type="checkbox" id="bg" checked> Remover fundo automaticamente</label>
     <label class="check"><input type="checkbox" id="dark" checked> Preservar detalhe escuro (olhos, nariz)</label>
     <label class="check"><input type="checkbox" id="outline" checked> Contorno de acabamento</label>
@@ -89,7 +113,8 @@
 
     <button type="submit" id="go" disabled>Gerar bordado</button>
     <p class="note">Menos cores = menos troca de linha e peca mais barata. Mais cores = mais fiel,
-       porem mais parada de maquina.</p>
+       porem mais parada de maquina. Fidelidade usa o catalogo de linhas reais; a coluna "no visor" mostra o que a Brother
+       vai exibir na tela, que e sempre uma das 64 cores da carta dela.</p>
   </form>
 
   <section class="card">
@@ -97,7 +122,7 @@
     <div id="result" hidden>
       <div class="stats" id="stats"></div>
       <div id="warnings"></div>
-      <table id="sheet"><thead><tr><th>#</th><th>Linha</th><th>Cor</th><th>Pontos</th></tr></thead><tbody></tbody></table>
+      <table id="sheet"><thead><tr><th>#</th><th>Linha (cone)</th><th>Cor</th><th>No visor da Brother</th><th>Pontos</th></tr></thead><tbody></tbody></table>
       <div class="dl" id="downloads"></div>
       <p class="note">Teste sempre numa amostra do tecido real antes de produzir. Malha, toalha e
          couro pedem estabilizador e densidade diferentes.</p>
@@ -108,6 +133,13 @@
 <script>
 const $ = (id) => document.getElementById(id);
 let picked = null;
+
+// Bastidores vem do servidor para nao duplicar a tabela em dois lugares.
+fetch('/api/info').then((r) => r.json()).then((info) => {
+  $('hoop').innerHTML = info.hoops
+    .map((h) => '<option' + (h.name === info.defaults.hoop ? ' selected' : '') + '>' + h.name + '</option>')
+    .join('');
+}).catch(() => {});
 
 $('drop').addEventListener('click', () => $('file').click());
 $('drop').addEventListener('dragover', (e) => { e.preventDefault(); $('drop').classList.add('over'); });
@@ -139,6 +171,9 @@ $('form').addEventListener('submit', async (e) => {
   body.append('colors', $('colors').value);
   body.append('row_spacing_mm', $('spacing').value);
   body.append('min_area_mm2', $('minarea').value);
+  body.append('hoop', $('hoop').value);
+  body.append('palette', $('palette').value);
+  body.append('pes_version', $('pesv').value);
   body.append('remove_background', $('bg').checked);
   body.append('preserve_dark_details', $('dark').checked);
   body.append('outline', $('outline').checked);
@@ -167,6 +202,7 @@ function render(data) {
     ['Trocas de cor', s.colors],
     ['Cortes', s.trims],
     ['Saltos', s.jumps],
+    ['Menor bastidor', data.hoop || 'nao cabe'],
   ].map(([k, v]) => '<div class="stat">' + k + '<b>' + v + '</b></div>').join('');
 
   $('warnings').innerHTML = (data.warnings || [])
@@ -175,10 +211,16 @@ function render(data) {
   $('sheet').tBodies[0].innerHTML = data.threads.map((t) =>
     '<tr><td>' + t.order + '</td><td>' + t.code + ' · ' + t.name + '</td>' +
     '<td><span class="sw" style="background:' + t.hex + '"></span> ' + t.hex + '</td>' +
+    '<td>' + (t.machine_display
+      ? '<span class="sw" style="background:' + t.machine_hex + '"></span> ' + t.machine_display
+      : '—') + '</td>' +
     '<td>' + t.stitches.toLocaleString('pt-BR') + '</td></tr>').join('');
 
-  $('downloads').innerHTML = data.formats.map((f) =>
-    '<a href="/api/download/' + data.job + '.' + f + '">.' + f.toUpperCase() + '</a>').join('');
+  // PES primeiro e destacado: e o formato da maquina alvo.
+  const ordered = [...data.formats].sort((a, b) => (a === 'pes' ? -1 : b === 'pes' ? 1 : 0));
+  $('downloads').innerHTML = ordered.map((f) =>
+    '<a class="' + (f === 'pes' ? 'primary' : '') + '" href="/api/download/' + data.job + '.' + f +
+    '">' + (f === 'pes' ? 'Baixar .PES (Brother)' : '.' + f.toUpperCase()) + '</a>').join('');
 }
 </script>
 </body>

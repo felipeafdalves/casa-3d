@@ -64,21 +64,36 @@ def design_to_svg(
     return "\n".join(parts)
 
 
-def color_sheet(design: Design) -> list[dict]:
-    """Ficha de linhas: o que o operador coloca na maquina, em ordem."""
+def color_sheet(design: Design, with_machine_display: bool = False) -> list[dict]:
+    """Ficha de linhas: o que o operador coloca na maquina, em ordem.
+
+    Com `with_machine_display`, cada linha traz tambem o nome que a Brother
+    vai mostrar no visor — util para o operador nao achar que trocou o cone
+    errado quando o visor disser "Khaki" e o cone for "Bege medio".
+    """
+    display = None
+    if with_machine_display:
+        from ..formats.brother import machine_display_color
+
+        display = machine_display_color
+
     sheet: list[dict] = []
     for order, block in enumerate(design.blocks, start=1):
-        sheet.append(
-            {
-                "order": order,
-                "code": block.thread.code,
-                "name": block.thread.name,
-                "brand": block.thread.brand,
-                "hex": block.thread.hex,
-                "stitches": block.stitch_count,
-                "label": block.label,
-            }
-        )
+        row = {
+            "order": order,
+            "code": block.thread.code,
+            "name": block.thread.name,
+            "brand": block.thread.brand,
+            "hex": block.thread.hex,
+            "stitches": block.stitch_count,
+            "label": block.label,
+        }
+        if display is not None:
+            shown = display(block.thread.rgb)
+            if shown is not None:
+                row["machine_display"] = f"{shown.code} {shown.name}"
+                row["machine_hex"] = shown.hex
+        sheet.append(row)
     return sheet
 
 
