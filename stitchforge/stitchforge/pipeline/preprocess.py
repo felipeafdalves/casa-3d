@@ -24,6 +24,11 @@ class PreprocessOptions:
     # (em % da area da imagem), tambem vira fundo: e o "miolo" de uma
     # moldura, nao um detalhe. Brilhos pequenos continuam sendo costurados.
     enclosed_background_pct: float = 3.0
+    # Largura maxima de "fresta" pela qual o fundo pode entrar na arte antes de
+    # ser considerado invasao, e nao fundo. Foto de bordado, hachura e meio tom
+    # tem textura clara ligada ao fundo: sem isto, o fundo entra pela textura e
+    # a figura inteira e apagada. Em arte chapada nao faz diferenca.
+    background_bridge_mm: float = 1.5
     smooth: int = 5  # 0 desliga; valores altos comem detalhe fino
     boost_saturation: float = 1.15
 
@@ -50,7 +55,18 @@ def _fit(image: np.ndarray, max_pixels: int) -> np.ndarray:
     )
 
 
-def _background_mask(rgb: np.ndarray, tolerance: int) -> np.ndarray:
+def _fill_small_holes(mask: np.ndarray, max_area: int) -> np.ndarray:
+    """Preenche buracos da mascara menores que `max_area` pixels."""
+    inverted = cv2.bitwise_not(mask)
+    count, labels, stats, _ = cv2.connectedComponentsWithStats(inverted, 8)
+    out = mask.copy()
+    for index in range(1, count):
+        if stats[index, cv2.CC_STAT_AREA] <= max_area:
+            out[labels == index] = 255
+    return out
+
+
+def _background_mask(rgb: np.ndarray, tolerance: int, bridge_px: int = 0) -> np.ndarray:
     """Fundo = regiao conectada as bordas com cor parecida com os cantos.
 
     Usa floodFill a partir dos 4 cantos em vez de "tudo que e claro":
@@ -67,10 +83,19 @@ def _background_mask(rgb: np.ndarray, tolerance: int) -> np.ndarray:
             cv2.FLOODFILL_MASK_ONLY | cv2.FLOODFILL_FIXED_RANGE | (255 << 8),
         )
     background = mask[1:-1, 1:-1]
-    background = cv2.morphologyEx(
-        background, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8)
-    )
-    return background
+    # Tapa APENAS furinhos do fundo, por area. Um fechamento morfologico faria
+    # o mesmo em aparencia, mas solda o fundo por cima de qualquer traco mais
+    # fino que o nucleo: em arte com textura (foto de bordado, hachura, meio
+    # tom), o fundo entra pelas frestas e o fechamento engole a figura inteira.
+    if bridge_px >= 3:
+        # Abertura: apaga fiapos de fundo mais finos que `bridge_px` sem soldar
+        # nada. Um fechamento faria o inverso — grudaria o fundo por cima de
+        # qualquer traco fino da arte, apagando a figura.
+        background = cv2.morphologyEx(
+            background, cv2.MORPH_OPEN, np.ones((bridge_px, bridge_px), np.uint8)
+        )
+    # Tapa APENAS furinhos do fundo, por area.
+    return _fill_small_holes(background, max_area=max(24, int(rgb[:, :, 0].size * 2e-5)))
 
 
 def _enclosed_background(rgb: np.ndarray, background: np.ndarray, tolerance: int,
@@ -129,7 +154,12 @@ def prepare(image_bgr_or_bgra: np.ndarray, options: PreprocessOptions) -> Prepar
         rgb = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
 
     if options.remove_background and image.shape[2] != 4:
-        background = _background_mask(rgb, options.background_tolerance)
+        # Escala provisoria pela largura da imagem — basta para dimensionar a
+        # abertura em milimetros antes de saber o recorte final do desenho.
+        provisional_mm_per_px = options.target_width_mm / max(rgb.shape[1], 1)
+        bridge_px = int(round(options.background_bridge_mm / provisional_mm_per_px))
+        bridge_px = max(0, min(bridge_px | 1, 21))  # impar, e com teto
+        background = _background_mask(rgb, options.background_tolerance, bridge_px)
         alpha[background > 0] = 0
         if options.enclosed_background_pct > 0:
             min_area_px = int(alpha.size * options.enclosed_background_pct / 100.0)

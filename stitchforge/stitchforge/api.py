@@ -112,6 +112,12 @@ def _warnings(design: Design, layers, hoop_name: str | None = None) -> list[str]
             f"{stats['trims']} cortes de linha. Cada corte e parada de maquina — "
             "aumente a area minima para eliminar respingos de cor."
         )
+    if len(layers) <= 2:
+        out.append(
+            "Sobraram so " + str(len(layers)) + " cores. Em arte com textura (foto de um "
+            "bordado pronto, hachura, meio tom) o fundo entra pelas frestas e come a "
+            "figura. Aumente \"Frestas do fundo\" ou desmarque a remocao de fundo."
+        )
     if any(layer.thread.brand == "brother" for layer in layers):
         out.append(
             "Paleta restrita a carta Brother: a previa casa com o visor da maquina, mas a "
@@ -153,6 +159,7 @@ def info() -> dict:
             "width_mm": 100,
             "colors": 6,
             "row_spacing_mm": StitchOptions().row_spacing_mm,
+            "background_bridge_mm": PreprocessOptions().background_bridge_mm,
             "format": "pes" if "pes" in available_formats() else "dst",
             "palette": "fidelity",
             "hoop": HOOPS[1].name,
@@ -169,6 +176,7 @@ async def digitize(
     row_spacing_mm: float = Form(0.40),
     min_area_mm2: float = Form(4.0),
     remove_background: bool = Form(True),
+    background_bridge_mm: float = Form(1.5),
     preserve_dark_details: bool = Form(True),
     outline: bool = Form(True),
     underlay: bool = Form(True),
@@ -189,7 +197,11 @@ async def digitize(
 
     prepared = prepare(
         _decode(data),
-        PreprocessOptions(target_width_mm=width_mm, remove_background=remove_background),
+        PreprocessOptions(
+            target_width_mm=width_mm,
+            remove_background=remove_background,
+            background_bridge_mm=max(0.0, min(background_bridge_mm, 5.0)),
+        ),
     )
     layers = quantize(
         prepared,

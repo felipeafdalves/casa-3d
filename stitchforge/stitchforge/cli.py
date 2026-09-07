@@ -48,6 +48,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--spacing-mm", type=float, default=0.40)
     parser.add_argument("--min-area-mm2", type=float, default=4.0)
     parser.add_argument("--keep-background", action="store_true")
+    parser.add_argument(
+        "--bridge-mm", type=float, default=1.5,
+        help="frestas do fundo: suba em arte com textura de pontos; 0 desliga",
+    )
     parser.add_argument("--no-outline", action="store_true")
     parser.add_argument("--preview", type=Path, help="grava previa .png ou .svg")
     args = parser.parse_args(argv)
@@ -59,7 +63,9 @@ def main(argv: list[str] | None = None) -> int:
     prepared = prepare(
         image,
         PreprocessOptions(
-            target_width_mm=args.width_mm, remove_background=not args.keep_background
+            target_width_mm=args.width_mm,
+            remove_background=not args.keep_background,
+            background_bridge_mm=args.bridge_mm,
         ),
     )
     catalog = None

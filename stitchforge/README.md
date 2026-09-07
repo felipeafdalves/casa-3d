@@ -110,6 +110,7 @@ stitchforge arte.png -w 120 -c 8 --hoop "5x7 (13x18 cm)" --preview previa.png
 | `--spacing-mm` | distancia entre carreiras do preenchimento (0.40 e o padrao para linha 40) |
 | `--min-area-mm2` | descarta respingos menores que isso; sobe para eliminar cortes |
 | `--keep-background` | nao tenta remover o fundo |
+| `--bridge-mm` | largura de fresta pela qual o fundo nao pode invadir a arte (padrao 1.5; suba em arte com textura de pontos, 0 desliga) |
 | `-f, --format` | `pes` (padrao) ou qualquer um que o `pyembroidery` grave |
 | `--pes-version` | `1` (padrao, universal) ou `6` |
 | `--hoop` | valida se cabe no bastidor Brother escolhido |
@@ -172,6 +173,11 @@ imagem
   furo e deixa linha atravessada na peca.
 - **Arremate em todo inicio e fim de trecho.** E o defeito mais comum de arquivo gerado
   automaticamente: sem trava, o bordado desfia na primeira lavagem.
+- **Nunca fechar a mascara de fundo.** Um `MORPH_CLOSE` na mascara de fundo parece so
+  "tapar furinhos", mas solda o fundo por cima de qualquer traco mais fino que o nucleo.
+  Em arte com textura (foto de um bordado pronto, hachura, meio tom) o fundo entra pelas
+  frestas e o fechamento apaga a figura inteira, sobrando so as areas densas. Furinho se
+  tapa por AREA; fiapo de fundo se remove por ABERTURA, que nao solda nada.
 - **Fundo fechado usa a tolerancia estrita.** Uma tolerancia frouxa engole um elemento
   palido colado no miolo (o aro claro de uma moldura) junto com o vazio — e some calado.
   Deixar miolo branco a mais, ao contrario, aparece na previa e o operador corrige.
@@ -197,7 +203,7 @@ catalog = load_catalog_csv("madeira.csv", brand="madeira")  # code,name,r,g,b  o
 ## Testes
 
 ```bash
-pytest -q     # 88 testes: codec DST, geometria dos pontos, API e alvo Brother/PES
+pytest -q     # 94 testes: codec DST, geometria dos pontos, API e alvo Brother/PES
 ```
 
 O codec DST tem teste de ida e volta bit a bit. Os PES gerados sao relidos e conferidos:

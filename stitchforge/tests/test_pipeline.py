@@ -158,3 +158,53 @@ def test_every_run_starts_with_a_jump_and_ties():
     for block in design.blocks:
         assert block.stitches[0].kind is StitchKind.JUMP
         assert block.stitch_count > 0
+
+
+def _textured_art(gap_px: int = 3) -> np.ndarray:
+    """Figura clara com textura de linhas — como FOTO de um bordado pronto.
+
+    E o caso que quebrava: o fundo entra pelas frestas da textura, e um
+    fechamento morfologico na mascara de fundo soldava tudo por cima da
+    figura, apagando o desenho inteiro e deixando so as areas densas.
+    """
+    import cv2
+
+    image = np.full((400, 400, 3), 255, np.uint8)
+    body = np.zeros((400, 400), np.uint8)
+    cv2.circle(body, (150, 220), 90, 255, -1)
+    for y in range(0, 400, 7):
+        cv2.line(body, (0, y), (400, y), 0, gap_px)  # fresta clara
+    image[body > 0] = (176, 196, 222)
+    leaf = np.zeros((400, 400), np.uint8)
+    cv2.ellipse(leaf, (310, 110), (60, 26), 30, 0, 360, 255, -1)
+    image[leaf > 0] = (40, 90, 50)
+    return image
+
+
+@pytest.mark.parametrize("gap_px", [1, 2, 3, 4])
+def test_texture_survives_background_removal(gap_px):
+    prepared = prepare(_textured_art(gap_px), PreprocessOptions(target_width_mm=100))
+    kept = (prepared.alpha > 0)
+    # A figura clara fica na metade esquerda; a folha densa, no alto a direita.
+    body_region = kept[130:310, 60:240]
+    assert body_region.mean() > 0.6, "a figura texturizada foi apagada pelo fundo"
+    assert kept[84:136, 250:370].mean() > 0.3, "a folha densa sumiu"
+
+
+def test_flat_art_background_still_removed():
+    """A correcao nao pode fazer o fundo liso deixar de ser removido."""
+    import cv2
+
+    image = np.full((300, 300, 3), 255, np.uint8)
+    cv2.circle(image, (150, 150), 70, (40, 40, 200), -1)
+    prepared = prepare(image, PreprocessOptions(target_width_mm=80))
+    assert (prepared.alpha > 0).mean() < 0.30  # so o circulo, nao a folha toda
+    assert prepared.alpha[150, 150] > 0        # e o circulo continua inteiro
+
+
+def test_background_bridge_can_be_disabled():
+    prepared = prepare(
+        _textured_art(4), PreprocessOptions(target_width_mm=100, background_bridge_mm=0)
+    )
+    with_bridge = prepare(_textured_art(4), PreprocessOptions(target_width_mm=100))
+    assert (with_bridge.alpha > 0).sum() > (prepared.alpha > 0).sum()
