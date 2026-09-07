@@ -87,7 +87,12 @@ def _enclosed_background(rgb: np.ndarray, background: np.ndarray, tolerance: int
         reference = np.median(corners.reshape(-1, 3), axis=0)
 
     distance = np.linalg.norm(rgb.astype(np.int16) - reference.astype(np.int16), axis=2)
-    similar = ((distance <= tolerance * 2.2) & (background == 0)).astype(np.uint8) * 255
+    # Mesma tolerancia da inundacao, e nao uma frouxa: "fechado e da cor do
+    # fundo" tem que significar a cor do fundo mesmo. Com tolerancia frouxa um
+    # elemento palido colado no miolo (o aro claro de uma moldura) e engolido
+    # junto — falha silenciosa, o elemento simplesmente some do bordado. Deixar
+    # miolo branco a mais, ao contrario, aparece na previa e o operador corrige.
+    similar = ((distance <= tolerance) & (background == 0)).astype(np.uint8) * 255
     similar = cv2.morphologyEx(similar, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
 
     count, labels, stats, _ = cv2.connectedComponentsWithStats(similar, 8)

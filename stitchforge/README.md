@@ -65,6 +65,18 @@ visor da maquina.
 
 ## Instalacao
 
+Um comando, na pasta `stitchforge/`:
+
+```bash
+./instalar.sh            # macOS / Linux
+.\instalar.ps1           # Windows (PowerShell)
+```
+
+Cria o ambiente virtual, instala tudo e sobe a interface em
+<http://127.0.0.1:8000>. Para so rodar os testes: `./instalar.sh --testes`.
+
+Manualmente, se preferir:
+
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[formats,dev]"
@@ -160,6 +172,9 @@ imagem
   furo e deixa linha atravessada na peca.
 - **Arremate em todo inicio e fim de trecho.** E o defeito mais comum de arquivo gerado
   automaticamente: sem trava, o bordado desfia na primeira lavagem.
+- **Fundo fechado usa a tolerancia estrita.** Uma tolerancia frouxa engole um elemento
+  palido colado no miolo (o aro claro de uma moldura) junto com o vazio — e some calado.
+  Deixar miolo branco a mais, ao contrario, aparece na previa e o operador corrige.
 - **Carta Brother nao vira camisa de forca.** Restringir a arte as 64 cores do visor piora a
   cor sem ganho fisico algum — a linha do cone e a que o operador comprou. A carta e
   informada, nao imposta.
