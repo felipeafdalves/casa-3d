@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.jobs/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+# saidas de bordado geradas em teste
+*.dst
+*.pes
+*.jef
+*.exp
+*.vp3
+*.xxx
+*.u01
+*.pec
+!samples/*.dst

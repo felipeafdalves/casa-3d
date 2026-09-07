@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StitchForge — imagem para bordado</title>
+<style>
+  :root{
+    --bg:#f6f4ef; --card:#fff; --ink:#26221d; --muted:#6d665d;
+    --line:#e2ddd3; --accent:#8a5a2b; --accent-ink:#fff; --warn:#8a4b00; --warn-bg:#fdf3e3;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#16150f;--card:#201e18;--ink:#efe9df;--muted:#a89e91;--line:#332f27;
+          --accent:#c98b4b;--accent-ink:#1b1710;--warn:#ffc98a;--warn-bg:#2c2213;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  header{padding:28px 20px 8px;max-width:1100px;margin:0 auto}
+  h1{margin:0;font-size:1.5rem;letter-spacing:-.02em}
+  header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+  main{max-width:1100px;margin:0 auto;padding:16px 20px 60px;
+       display:grid;grid-template-columns:340px 1fr;gap:20px;align-items:start}
+  @media (max-width:860px){main{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+  label{display:block;font-size:.82rem;color:var(--muted);margin:12px 0 4px;font-weight:600}
+  input[type=number],input[type=text],select{width:100%;padding:8px 10px;border:1px solid var(--line);
+       border-radius:8px;background:transparent;color:inherit;font:inherit}
+  .drop{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;
+        color:var(--muted);cursor:pointer;transition:.15s}
+  .drop:hover,.drop.over{border-color:var(--accent);color:var(--ink)}
+  .drop img{max-width:100%;max-height:160px;border-radius:8px;margin-top:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .check{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:.88rem;color:var(--ink)}
+  .check input{accent-color:var(--accent)}
+  button{margin-top:16px;width:100%;padding:11px;border:0;border-radius:9px;background:var(--accent);
+         color:var(--accent-ink);font:600 15px/1 inherit;cursor:pointer}
+  button:disabled{opacity:.55;cursor:progress}
+  .stage{min-height:320px;display:flex;align-items:center;justify-content:center;
+         background:repeating-conic-gradient(#0000 0 25%, #8881 0 50%) 0 0/18px 18px;border-radius:10px}
+  .stage img{max-width:100%;border-radius:8px}
+  .empty{color:var(--muted);font-size:.9rem;padding:40px;text-align:center}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:.88rem}
+  th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:600;font-size:.76rem;text-transform:uppercase;letter-spacing:.04em}
+  .sw{width:16px;height:16px;border-radius:4px;border:1px solid #0002;display:inline-block;vertical-align:-3px}
+  .stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .stat{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:.82rem}
+  .stat b{display:block;font-size:1.05rem}
+  .warn{background:var(--warn-bg);color:var(--warn);border-radius:9px;padding:10px 12px;
+        margin-top:12px;font-size:.86rem}
+  .dl{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .dl a{padding:8px 14px;border:1px solid var(--accent);color:var(--accent);border-radius:8px;
+        text-decoration:none;font-weight:600;font-size:.85rem}
+  .note{color:var(--muted);font-size:.8rem;margin-top:14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>StitchForge</h1>
+  <p>Converte uma imagem em arquivo de bordado. A previa mostra os pontos que a maquina vai dar —
+     confira antes de baixar: nenhum conversor automatico acerta sozinho.</p>
+</header>
+
+<main>
+  <form class="card" id="form">
+    <div class="drop" id="drop">
+      <div id="dropText">Clique ou arraste a imagem<br><small>png, jpg ou webp — fundo liso ajuda muito</small></div>
+      <img id="thumb" hidden alt="">
+      <input type="file" id="file" accept="image/*" hidden>
+    </div>
+
+    <label for="name">Nome do desenho</label>
+    <input type="text" id="name" value="bordado">
+
+    <div class="row">
+      <div><label for="width">Largura final (mm)</label><input type="number" id="width" value="100" min="10" max="400" step="5"></div>
+      <div><label for="colors">Cores de linha</label><input type="number" id="colors" value="6" min="1" max="16"></div>
+    </div>
+    <div class="row">
+      <div><label for="spacing">Carreiras (mm)</label><input type="number" id="spacing" value="0.40" min="0.2" max="1" step="0.05"></div>
+      <div><label for="minarea">Area minima (mm²)</label><input type="number" id="minarea" value="4" min="0.5" max="50" step="0.5"></div>
+    </div>
+
+    <label class="check"><input type="checkbox" id="bg" checked> Remover fundo automaticamente</label>
+    <label class="check"><input type="checkbox" id="dark" checked> Preservar detalhe escuro (olhos, nariz)</label>
+    <label class="check"><input type="checkbox" id="outline" checked> Contorno de acabamento</label>
+    <label class="check"><input type="checkbox" id="underlay" checked> Underlay (base sob o preenchimento)</label>
+
+    <button type="submit" id="go" disabled>Gerar bordado</button>
+    <p class="note">Menos cores = menos troca de linha e peca mais barata. Mais cores = mais fiel,
+       porem mais parada de maquina.</p>
+  </form>
+
+  <section class="card">
+    <div class="stage" id="stage"><div class="empty" id="stageEmpty">A previa dos pontos aparece aqui.</div></div>
+    <div id="result" hidden>
+      <div class="stats" id="stats"></div>
+      <div id="warnings"></div>
+      <table id="sheet"><thead><tr><th>#</th><th>Linha</th><th>Cor</th><th>Pontos</th></tr></thead><tbody></tbody></table>
+      <div class="dl" id="downloads"></div>
+      <p class="note">Teste sempre numa amostra do tecido real antes de produzir. Malha, toalha e
+         couro pedem estabilizador e densidade diferentes.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let picked = null;
+
+$('drop').addEventListener('click', () => $('file').click());
+$('drop').addEventListener('dragover', (e) => { e.preventDefault(); $('drop').classList.add('over'); });
+$('drop').addEventListener('dragleave', () => $('drop').classList.remove('over'));
+$('drop').addEventListener('drop', (e) => {
+  e.preventDefault(); $('drop').classList.remove('over');
+  if (e.dataTransfer.files[0]) select(e.dataTransfer.files[0]);
+});
+$('file').addEventListener('change', (e) => e.target.files[0] && select(e.target.files[0]));
+
+function select(f) {
+  picked = f;
+  $('thumb').src = URL.createObjectURL(f);
+  $('thumb').hidden = false;
+  $('dropText').innerHTML = f.name;
+  $('go').disabled = false;
+  const base = f.name.replace(/\.[^.]+$/, '');
+  if ($('name').value === 'bordado') $('name').value = base.slice(0, 16);
+}
+
+$('form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!picked) return;
+  $('go').disabled = true; $('go').textContent = 'Calculando pontos…';
+  const body = new FormData();
+  body.append('file', picked);
+  body.append('name', $('name').value || 'bordado');
+  body.append('width_mm', $('width').value);
+  body.append('colors', $('colors').value);
+  body.append('row_spacing_mm', $('spacing').value);
+  body.append('min_area_mm2', $('minarea').value);
+  body.append('remove_background', $('bg').checked);
+  body.append('preserve_dark_details', $('dark').checked);
+  body.append('outline', $('outline').checked);
+  body.append('underlay', $('underlay').checked);
+
+  try {
+    const res = await fetch('/api/digitize', { method: 'POST', body });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'falha ao gerar');
+    render(data);
+  } catch (err) {
+    $('stage').innerHTML = '<div class="empty">' + err.message + '</div>';
+  } finally {
+    $('go').disabled = false; $('go').textContent = 'Gerar bordado';
+  }
+});
+
+function render(data) {
+  $('stage').innerHTML = '<img alt="previa dos pontos" src="/api/preview/' + data.job + '.png?px_per_mm=6">';
+  $('result').hidden = false;
+
+  const s = data.stats;
+  $('stats').innerHTML = [
+    ['Pontos', s.stitches.toLocaleString('pt-BR')],
+    ['Tamanho', s.width_mm + ' × ' + s.height_mm + ' mm'],
+    ['Trocas de cor', s.colors],
+    ['Cortes', s.trims],
+    ['Saltos', s.jumps],
+  ].map(([k, v]) => '<div class="stat">' + k + '<b>' + v + '</b></div>').join('');
+
+  $('warnings').innerHTML = (data.warnings || [])
+    .map((w) => '<div class="warn">' + w + '</div>').join('');
+
+  $('sheet').tBodies[0].innerHTML = data.threads.map((t) =>
+    '<tr><td>' + t.order + '</td><td>' + t.code + ' · ' + t.name + '</td>' +
+    '<td><span class="sw" style="background:' + t.hex + '"></span> ' + t.hex + '</td>' +
+    '<td>' + t.stitches.toLocaleString('pt-BR') + '</td></tr>').join('');
+
+  $('downloads').innerHTML = data.formats.map((f) =>
+    '<a href="/api/download/' + data.job + '.' + f + '">.' + f.toUpperCase() + '</a>').join('');
+}
+</script>
+</body>
+</html>
