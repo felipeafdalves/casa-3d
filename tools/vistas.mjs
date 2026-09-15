@@ -18,6 +18,7 @@ await page.goto(`http://127.0.0.1:${servidor.address().port}/?qualidade=${proces
 page.setDefaultTimeout(240000);
 await page.waitForFunction(() => document.getElementById('botao-entrar') && !document.getElementById('botao-entrar').disabled);
 await page.evaluate(() => { document.getElementById('tela-inicial').hidden = true; document.getElementById('hud').style.display = 'none'; });
+await page.waitForTimeout(+(process.env.ESPERA || 5000)); // modelos GLB assíncronos
 for (const [nome, x, y, nivel, yaw, pitch] of JSON.parse(process.env.VISTAS_JSON || '[]')) {
   await page.evaluate(([x, y, nivel, yaw, pitch]) => { const j = window.__casa.jogador; j.teleportar(x, y, nivel, yaw); j.pitch = pitch; j.atualizarCamera(); }, [x, y, nivel, yaw, pitch]);
   await page.waitForTimeout(700);

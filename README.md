@@ -65,6 +65,12 @@ Crie um projeto novo na Vercel apontando para este repositório com **Root Direc
 A Vercel detecta o Vite (build `npm run build`, output `dist`). O painel financeiro continua no
 projeto existente (raiz do repositório), sem interferência.
 
+## Exportar para Blender / Unreal
+
+O botão **Exportar GLB** no ecrã inicial grava a casa inteira (paredes, pisos, escadas, mobiliário, modelos, com materiais
+e texturas) num ficheiro glTF binário. Abre diretamente no Blender (File → Import → glTF), no Unreal Engine 5 e na maioria
+dos programas 3D: é o caminho para luz cozinhada, renders em Cycles e vídeos fotorrealistas a partir da planta já validada.
+
 ## Pipeline da planta (DWG → JSON)
 
 1. Converter o DWG para DXF (o ficheiro de aprovação está em centímetros):
@@ -89,6 +95,10 @@ escadas, exterior), `src/mobiliario.js` (kit de peças), `src/materiais.js` (tex
 - Fotos de madeira, tijolo e relva: exemplos do three.js (licença MIT), descarregadas para `public/texturas/`.
 - Ambientes HDR `spruit_sunrise_1k` e `moonless_golf_1k`: Poly Haven (CC0), distribuídos com o three.js, em `public/hdr/`.
 - Todos os outros materiais (papéis de parede, azulejos, pedra, siding, ripados) são gerados por código em `src/materiais.js`.
+- Modelos 3D reais em `public/modelos/` (peças `tipo: 'glb'` em `casa.ajustes.js`), dos glTF Sample Assets do Khronos Group:
+  Sheen Chair, Chair Damask, Glam Velvet Sofa e Anisotropy Barn Lamp (© Wayfair, CC-BY 4.0), Sheen Wood Leather Sofa e
+  Diffuse Transmission Plant (© Darmstadt Graphics Group, CC-BY 4.0), Glass Vase with Flowers (CC0). Qualquer GLB pode ser
+  usado da mesma forma: `{ tipo: 'glb', url, pos, rot, largura|comprimento|altura|escala, rotY, tinta, colisor }`.
 
 ## Verificação automática
 

@@ -56,8 +56,13 @@ async function iniciar() {
   // mobiliário
   const nColisoresBase = construtor.colisores.length; // paredes, guardas, escadas
   const pecasColocadas = []; // { item, colisores } — usado pela auditoria automática (tools/capturas.mjs)
+  const carregadorGLB = new GLTFLoader();
   for (const item of modelo.mobiliario) {
     const pav = modelo.porId[item.pav];
+    if (item.tipo === 'glb') {
+      colocarGLB(item, pav, carregadorGLB, pecasColocadas);
+      continue;
+    }
     const peca = criarPeca(item.tipo, item);
     const rot = ((item.rot || 0) * Math.PI) / 180;
     peca.grupo.position.set(item.pos[0], pav.nivel + (item.z || 0), -item.pos[1]);
@@ -114,6 +119,10 @@ async function iniciar() {
     document.getElementById('tela-inicial').hidden = true;
     jogador.entrar();
   });
+  const botaoExportar = document.getElementById('botao-exportar');
+  botaoExportar.disabled = false;
+  botaoExportar.addEventListener('click', () => descarregarGLB(botaoExportar));
+  window.__casa.exportarGLB = exportarGLB;
   document.addEventListener('pointerlockchange', () => {
     if (!document.pointerLockElement && document.getElementById('teleporte').hidden) {
       document.getElementById('tela-inicial').hidden = false;
@@ -145,6 +154,104 @@ async function alternarModoFoto() {
   }
   await modoFoto.entrar(qualidade);
   jogador.moveu = false;
+}
+
+// Modelo real (GLB) como peça de mobiliário: carregado de forma assíncrona, normalizado (assenta no chão,
+// centrado em xz, escalado para `largura` ou `comprimento` em metros, ou `escala` direta) e com colisor pela caixa envolvente.
+// `rotY` corrige modelos cuja frente não é +z. Convenção de `rot` igual às outras peças.
+function colocarGLB(item, pav, carregador, lista) {
+  const grupo = new THREE.Group();
+  const rot = ((item.rot || 0) * Math.PI) / 180;
+  grupo.position.set(item.pos[0], pav.nivel + (item.z || 0), -item.pos[1]);
+  grupo.rotation.y = rot;
+  grupo.userData.pav = item.pav;
+  scene.add(grupo);
+  const registo = { item, colisores: [] };
+  lista.push(registo);
+  carregador.load(
+    item.url,
+    (gltf) => {
+      const raiz = gltf.scene;
+      raiz.rotation.y = ((item.rotY || 0) * Math.PI) / 180;
+      raiz.updateMatrixWorld(true);
+      const caixa = new THREE.Box3().setFromObject(raiz);
+      const tam = new THREE.Vector3();
+      caixa.getSize(tam);
+      let k = item.escala || 1;
+      if (item.largura) k = item.largura / tam.x;
+      else if (item.comprimento) k = item.comprimento / tam.z;
+      else if (item.altura) k = item.altura / tam.y;
+      const centro = new THREE.Vector3();
+      caixa.getCenter(centro);
+      raiz.position.set(-centro.x * k, -caixa.min.y * k, -centro.z * k);
+      raiz.scale.setScalar(k);
+      const tinta = item.tinta ? new THREE.Color(item.tinta) : null;
+      raiz.traverse((o) => {
+        if (o.isMesh) {
+          o.castShadow = true;
+          o.receiveShadow = true;
+          if (o.material && o.material.transmission > 0) o.castShadow = false;
+          // `tinta`: recolore os materiais não metálicos (tecidos, veludos), mantendo as texturas de relevo e oclusão
+          if (tinta && o.material && !(o.material.metalness > 0.5)) {
+            o.material = o.material.clone();
+            if (o.material.map) o.material.map = null;
+            o.material.color.copy(tinta);
+            if (o.material.sheenColor) o.material.sheenColor.copy(tinta).multiplyScalar(0.6);
+          }
+        }
+      });
+      grupo.add(raiz);
+      const hx = (tam.x * k) / 2;
+      const hy = (tam.z * k) / 2;
+      const alt = tam.y * k;
+      if (item.colisor !== false) {
+        const c = construtor.addColisorCaixa(item.pos[0], item.pos[1], hx, hy, rot, pav.nivel + (item.z || 0), pav.nivel + (item.z || 0) + alt);
+        registo.colisores.push(c);
+      }
+      // colisor local para a auditoria (peça centrada)
+      grupo.userData.colisorLocal = { hx, hy, alt };
+    },
+    undefined,
+    (e) => console.warn('Modelo GLB não carregado:', item.url, e)
+  );
+}
+
+// Exporta a casa inteira (paredes, pisos, escadas, mobiliário, modelos) em GLB para abrir no Blender ou no Unreal.
+async function exportarGLB() {
+  const { GLTFExporter } = await import('three/examples/jsm/exporters/GLTFExporter.js');
+  const exportador = new GLTFExporter();
+  const invisiveis = [];
+  scene.traverse((o) => {
+    if (o.isSky || o.isLight || o.userData.tipo === 'telhado_helper') {
+      if (o.visible) invisiveis.push(o);
+      o.visible = false;
+    }
+  });
+  try {
+    const dados = await exportador.parseAsync(scene, { binary: true, onlyVisible: true, trs: false, maxTextureSize: 2048 });
+    return dados; // ArrayBuffer
+  } finally {
+    for (const o of invisiveis) o.visible = true;
+  }
+}
+
+async function descarregarGLB(botao) {
+  const texto = botao.textContent;
+  botao.disabled = true;
+  botao.textContent = 'A exportar… (pode demorar 1 minuto)';
+  try {
+    const dados = await exportarGLB();
+    const a = document.createElement('a');
+    a.download = 'casa-veronica-felipe.glb';
+    a.href = URL.createObjectURL(new Blob([dados], { type: 'model/gltf-binary' }));
+    a.click();
+    botao.textContent = `Exportado (${(dados.byteLength / 1048576).toFixed(0)} MB)`;
+  } catch (e) {
+    console.error(e);
+    botao.textContent = 'Falhou a exportação (ver consola)';
+  } finally {
+    setTimeout(() => { botao.textContent = texto; botao.disabled = false; }, 4000);
+  }
 }
 
 function carregarModeloOpcional() {
