@@ -93,6 +93,8 @@ export function construirModelo() {
       .map((v) => ({ ...v, a: desloca(v.a, d), b: desloca(v.b, d) }))
       .filter((v) => !remover.some((r) => perto(meio(v.a, v.b), r, 0.35)));
     vaos = vaos.concat(ajustes.vaosExtra[pav.id] || []);
+    // propriedades extra em vãos existentes (ex.: cortinas curtas na janela da cozinha)
+    for (const aj of ajustes.vaosAjustar?.[pav.id] || []) for (const v of vaos) if (perto(meio(v.a, v.b), aj.perto, 0.35)) Object.assign(v, aj.props);
     paredes = fundirParedesAtravesDosVaos(paredes, vaos);
     // alturas limitadas: paredes inteiras (pelo meio) e também troços (aplicado peça a peça no construtor,
     // porque a fusão através dos vãos junta vários segmentos numa só parede)

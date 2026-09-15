@@ -55,7 +55,7 @@ function textura(c, repetir = [1, 1], srgb = true) {
 }
 
 // ---------- geradores ----------
-function madeira({ base = '#5a3d25', veio = '#3d2814', claro = '#6e4c2e', tabuas = 6, seed = 7, tam = 1024 } = {}) {
+function madeira({ base = '#5a3d25', veio = '#3d2814', claro = '#6e4c2e', tabuas = 6, seed = 7, tam = 1024, claridade = 1 } = {}) {
   const c = canvas(tam);
   const ctx = c.getContext('2d');
   const alt = canvas(tam);
@@ -69,7 +69,7 @@ function madeira({ base = '#5a3d25', veio = '#3d2814', claro = '#6e4c2e', tabuas
   for (let i = 0; i < tabuas; i++) {
     const x0 = i * largura;
     const desloc = r() * tam; // junta desencontrada
-    const tom = 0.85 + r() * 0.3;
+    const tom = (0.85 + r() * 0.3) * claridade;
     ctx.fillStyle = `rgba(${Math.round(90 * tom)},${Math.round(62 * tom)},${Math.round(38 * tom)},1)`;
     ctx.fillRect(x0, 0, largura, tam);
     // veios
@@ -283,6 +283,84 @@ function porcelanato({ tam = 1024, cor = [232, 228, 220], rejunte = '#bdb6aa', s
       ctx.stroke();
     }
   return { cor: c, altura: h };
+}
+
+// Mármore branco com veios cinzentos (bancadas da cozinha): nuvens suaves + veios finos ramificados.
+function marmore({ tam = 1024, seed = 21, base = [242, 240, 236], veios = 9 } = {}) {
+  const c = canvas(tam);
+  const ctx = c.getContext('2d');
+  const r = ruido(seed);
+  ctx.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`;
+  ctx.fillRect(0, 0, tam, tam);
+  // nuvens e veios desenham-se numa tela pequena e ampliam-se com suavização: fica desfocado como no mármore real
+  const peq = tam / 8;
+  const v = canvas(peq);
+  const vctx = v.getContext('2d');
+  vctx.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`;
+  vctx.fillRect(0, 0, peq, peq);
+  for (let i = 0; i < 40; i++) {
+    const x = r() * peq, y = r() * peq, rad = 8 + r() * 30;
+    const g = vctx.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, `rgba(200,200,198,${0.1 + r() * 0.15})`);
+    g.addColorStop(1, 'rgba(200,200,198,0)');
+    vctx.fillStyle = g;
+    vctx.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  }
+  vctx.lineCap = 'round';
+  for (let i = 0; i < veios; i++) {
+    const principal = i < veios / 3;
+    vctx.strokeStyle = `rgba(140,138,136,${principal ? 0.45 + r() * 0.25 : 0.18 + r() * 0.15})`;
+    vctx.lineWidth = principal ? 0.8 + r() * 1.2 : 1.5 + r() * 2.5;
+    vctx.beginPath();
+    let x = r() * peq, y = r() * peq;
+    vctx.moveTo(x, y);
+    for (let k = 0; k < 5; k++) {
+      const nx = x + (r() - 0.5) * peq * 0.5, ny = y + (r() - 0.5) * peq * 0.5;
+      vctx.bezierCurveTo(x + (r() - 0.5) * 30, y + (r() - 0.5) * 30, nx + (r() - 0.5) * 30, ny + (r() - 0.5) * 30, nx, ny);
+      x = nx;
+      y = ny;
+    }
+    vctx.stroke();
+  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(v, 0, 0, tam, tam);
+  // veios finos nítidos por cima, muito ténues (dão a escala)
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 6; i++) {
+    ctx.strokeStyle = `rgba(120,118,116,${0.12 + r() * 0.1})`;
+    ctx.lineWidth = 1 + r() * 1.5;
+    ctx.beginPath();
+    let x = r() * tam, y = r() * tam;
+    ctx.moveTo(x, y);
+    for (let k = 0; k < 4; k++) {
+      const nx = x + (r() - 0.5) * tam * 0.4, ny = y + (r() - 0.5) * tam * 0.4;
+      ctx.bezierCurveTo(x + (r() - 0.5) * 200, y + (r() - 0.5) * 200, nx + (r() - 0.5) * 200, ny + (r() - 0.5) * 200, nx, ny);
+      x = nx;
+      y = ny;
+    }
+    ctx.stroke();
+  }
+  return { cor: c };
+}
+
+// Riscas horizontais finas (mapa de rugosidade do inox escovado).
+function escovado({ tam = 512, seed = 3 } = {}) {
+  const c = canvas(tam);
+  const ctx = c.getContext('2d');
+  const img = ctx.createImageData(tam, tam);
+  const r = ruido(seed);
+  for (let y = 0; y < tam; y++) {
+    const linha = 120 + (r() - 0.5) * 90;
+    for (let x = 0; x < tam; x++) {
+      const v = Math.max(60, Math.min(220, linha + (r() - 0.5) * 30));
+      const i = (y * tam + x) * 4;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
 }
 
 function tecido({ cor = [222, 214, 200], tam = 256, seed = 4 } = {}) {
@@ -587,10 +665,16 @@ const receitas = {
   couro: () => new THREE.MeshStandardMaterial({ color: '#7a4a2c', roughness: 0.55 }),
   colchao: () => padrao(tecido({ cor: [240, 236, 228] }), { rep: [3, 3], rough: 1 }),
   tapete: () => padrao(tecido({ cor: [150, 140, 128], seed: 8 }), { rep: [6, 6], rough: 1 }),
-  marmore: () => padrao(porcelanato({ pecas: 1, rejunte: '#e8e4dc' }), { rep: [1, 1], rough: 0.15, normal: 0.1 }),
+  marmore: () => new THREE.MeshPhysicalMaterial({ map: textura(marmore().cor, [1, 1]), roughness: 0.12, metalness: 0, clearcoat: 0.35, clearcoatRoughness: 0.15 }),
+  nogueira_tampo: () => padrao(madeira({ seed: 61, tabuas: 9, claridade: 1.5 }), { rep: [1, 1], rough: 0.32, normal: 0.35, cor: '#c4ab92' }), // tampo de nogueira (tábuas coladas)
+  linho_taupe: () => padrao(tecido({ cor: [168, 156, 140], seed: 15 }), { rep: [5, 5], rough: 1 }),
+  esmalte_preto: () => new THREE.MeshPhysicalMaterial({ color: '#17181b', roughness: 0.3, metalness: 0.15, clearcoat: 0.5, clearcoatRoughness: 0.2 }),
+  vidro_forno: () => new THREE.MeshStandardMaterial({ color: '#0b0b0d', roughness: 0.06, metalness: 0.4 }),
+  ceramica_azul: () => new THREE.MeshStandardMaterial({ color: '#4d6a8a', roughness: 0.25 }),
+  eucalipto: () => new THREE.MeshStandardMaterial({ color: '#8ea08a', roughness: 0.9, side: THREE.DoubleSide }),
   granito_preto: () => new THREE.MeshStandardMaterial({ color: '#1b1b1d', roughness: 0.2, metalness: 0.1 }),
   metal_preto: () => new THREE.MeshStandardMaterial({ color: '#151515', roughness: 0.4, metalness: 0.7 }),
-  inox: () => new THREE.MeshStandardMaterial({ color: '#b9bcbf', roughness: 0.25, metalness: 0.9 }),
+  inox: () => new THREE.MeshStandardMaterial({ color: '#d3d6d8', roughness: 0.45, metalness: 0.85, roughnessMap: textura(escovado(), [1, 1], false) }), // escovado
   latao: () => new THREE.MeshStandardMaterial({ color: '#b08d4c', roughness: 0.3, metalness: 0.9 }),
   porta: () => new THREE.MeshStandardMaterial({ color: '#f5f3ee', roughness: 0.5 }),
   porta_madeira: () => padrao(madeira({ seed: 77, tabuas: 3 }), { rep: [1, 1], rough: 0.5, normal: 0.3, cor: '#8a6743' }),

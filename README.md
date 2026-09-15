@@ -17,7 +17,10 @@ com acabamentos baseados no **projeto de interiores** (Bruna Varhau, REV01). Cor
 - **Janelas e portas com caixilho preto quadriculado**, portas que abrem (tecla E), porta de correr da varanda.
 - **Mobiliário paramétrico** desenhado sobre as referências: lareira de pedra até ao teto com bancos de janela e TV,
   estantes em arco com fundo ripado, sofá em L de linho com almofadas, mesa "live edge", lustre de roda duplo,
-  cozinha shaker com portas de vidro, coifa e cuba de avental, ilha com tampo de madeira e pernas torneadas,
+  cozinha modular igual às pranchas 30–35 do projeto (`cozinha_linear`: despensa, geladeira french door em inox com armário
+  por cima, superiores de vidro com loiça, fogão preto de dois fornos com coifa de guarnição de nogueira, prateleiras
+  abertas, cuba de avental com torneira de ponte em latão, lava-louça, bancada de mármore e frontão subway), ilha com
+  tampo de nogueira, micro-ondas e forno do lado da cozinha, banquetas estofadas e lanternas,
   mesa de fazenda com cadeiras de bouclé e lustre de velas, cristaleira, lavanderia com vigas e armário de madeira,
   banheiros com bancada sálvia, mármore e box em espinha de peixe, escritório com estante embutida e sofá de veludo,
   camas de nogueira com colunas e mesas de cabeceira, cama-baú infantil, garagem com dois carros, portão preto estilo

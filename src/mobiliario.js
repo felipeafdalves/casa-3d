@@ -94,15 +94,16 @@ function shaker(w, h, mat, x, y, z, puxador = 'latao', esp = 0.02) {
 }
 
 /** Porta com vidro e travessas (armário superior). */
-function portaVidro(w, h, mat, x, y, z) {
+function portaVidro(w, h, mat, x, y, z, divisoes = [2, 2]) {
   const g = new THREE.Group();
   const b = 0.05;
   g.add(caixa(w, b, 0.025, mat, 0, h / 2 - b / 2, 0));
   g.add(caixa(w, b, 0.025, mat, 0, -h / 2 + b / 2, 0));
   g.add(caixa(b, h, 0.025, mat, -w / 2 + b / 2, 0, 0));
   g.add(caixa(b, h, 0.025, mat, w / 2 - b / 2, 0, 0));
-  g.add(caixa(0.015, h - 2 * b, 0.012, mat, 0, 0, 0));
-  g.add(caixa(w - 2 * b, 0.015, 0.012, mat, 0, 0, 0));
+  // travessas: divisoes = [colunas, linhas] de vidros
+  for (let i = 1; i < divisoes[0]; i++) g.add(caixa(0.015, h - 2 * b, 0.012, mat, -w / 2 + (w / divisoes[0]) * i, 0, 0));
+  for (let j = 1; j < divisoes[1]; j++) g.add(caixa(w - 2 * b, 0.015, 0.012, mat, 0, -h / 2 + (h / divisoes[1]) * j, 0));
   const v = new THREE.Mesh(new THREE.PlaneGeometry(w - 2 * b, h - 2 * b), material('vidro'));
   g.add(v);
   g.add(esfera(0.012, 'latao', w / 2 - b - 0.02, -0.05, 0.02, 8));
@@ -138,6 +139,67 @@ function planta(x, y, z, r = 0.25, folhas = 5) {
   for (let i = 0; i < folhas; i++) {
     const a = (i / folhas) * Math.PI * 2;
     g.add(esfera(r * (0.6 + (i % 2) * 0.25), 'planta', Math.cos(a) * r * 0.55, r * 0.7 + (i % 3) * r * 0.25, Math.sin(a) * r * 0.55, 8));
+  }
+  g.position.set(x, y, z);
+  return g;
+}
+
+/** Perna torneada adicionada a um grupo (assinatura simples). */
+function pernaTorneadaEm(g, h, mat, x, z, r) {
+  g.add(pernaTorneada(h, mat, x, z, r));
+}
+
+/** Banco alto estofado (assento em linho, encosto curvo, pernas pretas com apoio de pés). Frente = +z. */
+function bancoEstofado(mat = 'linho_taupe') {
+  const b = new THREE.Group();
+  b.add(caixa(0.4, 0.02, 0.38, 'metal_preto', 0, 0.64, 0));
+  b.add(almofada(0.44, 0.1, 0.42, mat, 0, 0.7, 0, 0.05));
+  const mE = M(mat).clone();
+  mE.side = THREE.DoubleSide;
+  const enc = new THREE.Mesh(new THREE.CylinderGeometry(0.225, 0.225, 0.36, 22, 1, true, Math.PI * 0.3, Math.PI * 1.4), mE);
+  enc.position.set(0, 0.93, 0);
+  enc.castShadow = true;
+  b.add(enc);
+  const aro = new THREE.Mesh(new THREE.TorusGeometry(0.225, 0.012, 6, 22, Math.PI * 1.4), mE);
+  aro.rotation.x = Math.PI / 2;
+  aro.rotation.z = -Math.PI * 0.2;
+  aro.position.set(0, 1.11, 0);
+  b.add(aro);
+  for (const [px, pz] of [[-0.17, -0.16], [0.17, -0.16], [-0.17, 0.16], [0.17, 0.16]]) {
+    const perna = cilindro(0.011, 0.66, 'metal_preto', px, 0.33, pz, 8, 0.015);
+    perna.rotation.z = -px * 0.12;
+    perna.rotation.x = pz * 0.12;
+    b.add(perna);
+  }
+  b.add(caixa(0.36, 0.014, 0.014, 'metal_preto', 0, 0.24, 0.17));
+  b.add(caixa(0.36, 0.014, 0.014, 'metal_preto', 0, 0.24, -0.17));
+  for (const s of [-1, 1]) b.add(caixa(0.014, 0.014, 0.34, 'metal_preto', s * 0.18, 0.24, 0));
+  return b;
+}
+
+/** Jarro de cerâmica branca com ramos de eucalipto (folhas redondas cinza-esverdeadas). */
+function vasoEucalipto(x, y, z) {
+  const g = new THREE.Group();
+  g.add(cilindro(0.075, 0.24, 'ceramica_branca', 0, 0.12, 0, 18, 0.06));
+  g.add(cilindro(0.045, 0.04, 'ceramica_branca', 0, 0.26, 0, 14, 0.06));
+  const folha = M('eucalipto');
+  const haste = new THREE.MeshStandardMaterial({ color: '#6b6a55', roughness: 0.9 });
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + 0.4;
+    const inc = 0.28 + (i % 3) * 0.14;
+    const comp = 0.36 + (i % 2) * 0.12;
+    const ramo = new THREE.Group();
+    ramo.add(cilindro(0.003, comp, haste, 0, comp / 2, 0, 5));
+    for (let k = 0; k < 7; k++) {
+      const f = cilindro(0.022 + (k % 2) * 0.006, 0.003, folha, (k % 2 ? 1 : -1) * 0.02, 0.08 + k * ((comp - 0.08) / 7), 0, 10);
+      f.rotation.x = 0.5 + (k % 3) * 0.3;
+      f.rotation.z = (k % 2 ? 1 : -1) * 0.5;
+      ramo.add(f);
+    }
+    ramo.rotation.z = Math.cos(a) * inc;
+    ramo.rotation.x = Math.sin(a) * inc;
+    ramo.position.y = 0.24;
+    g.add(ramo);
   }
   g.position.set(x, y, z);
   return g;
@@ -782,8 +844,8 @@ const pecas = {
     const g = new THREE.Group();
     g.add(cilindro(0.006, corrente, 'metal_preto', 0, corrente / 2, 0, 6));
     if (estilo === 'lanterna') {
-      const w = 0.3;
-      const h = 0.42;
+      const w = 0.34;
+      const h = 0.56;
       for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) g.add(caixa(0.012, h, 0.012, 'metal_preto', (sx * w) / 2, -h / 2, (sz * w) / 2));
       for (const y of [0, -h]) {
         g.add(caixa(w, 0.012, 0.012, 'metal_preto', 0, y, -w / 2));
@@ -797,7 +859,7 @@ const pecas = {
         arco.rotation.x = -sz * 0.6;
         g.add(arco);
       }
-      g.add(cilindro(0.09, 0.26, 'cupula', 0, -h / 2, 0, 18));
+      g.add(cilindro(0.115, 0.32, 'cupula', 0, -h / 2, 0, 20));
       g.add(esfera(0.03, 'lampada', 0, -h / 2, 0, 8));
     } else {
       g.add(cilindro(0.16, 0.06, 'metal_preto', 0, -0.03, 0, 16, 0.08));
@@ -875,37 +937,321 @@ const pecas = {
     g.add(coroa);
     return { grupo: g, colisores: [col(largura / 2, 0.26, 2.65)] };
   },
-  ilha({ comprimento = 2.6, prof = 1.0 }) {
+  // ---------- cozinha do projeto de interiores (p. 30–35): linha modular de armários shaker brancos
+  // modulos: [{ tipo, l, sup, frontao }] de -x para +x (com rot 90 = de sul para norte; com rot 0 = de oeste para leste).
+  //   tipo: 'portas' | 'gavetas' | 'pia' | 'lava_louca' | 'fogao' | 'despensa' | 'geladeira' | 'painel'
+  //   sup:  'portas' | 'vidro' | 'coifa' | 'prateleiras' (armários superiores por cima do módulo)
+  //   frontao: altura (m) até onde sobe o azulejo subway atrás do módulo (por defeito até aos superiores)
+  cozinha_linear({ modulos = [], altura = 2.82, material: mat = 'marcenaria_branca', tampo = 'marmore', puxador = 'metal_preto' }) {
     const g = new THREE.Group();
-    const corpo = prof - 0.35; // parte fechada; os bancos ficam sob a aba do tampo
-    g.add(caixa(comprimento, 0.86, corpo, 'marcenaria_branca', 0, 0.43, -0.175));
-    // painéis shaker nas costas e laterais
-    for (let i = 0; i < 3; i++) g.add(shaker(comprimento / 3 - 0.08, 0.7, 'marcenaria_branca', -comprimento / 3 + (i * comprimento) / 3, 0.45, -0.175 - corpo / 2 - 0.001, null, 0.01));
-    for (const s of [-1, 1]) g.add(shaker(corpo - 0.08, 0.7, 'marcenaria_branca', s * (comprimento / 2 + 0.001), 0.45, -0.175, null, 0.01).rotateY(Math.PI / 2));
-    for (let i = 0; i < 3; i++) g.add(shaker(comprimento / 3 - 0.08, 0.7, 'marcenaria_branca', -comprimento / 3 + (i * comprimento) / 3, 0.45, -0.175 + corpo / 2 + 0.001, null, 0.01));
-    g.add(caixa(comprimento + 0.1, 0.06, prof + 0.1, 'nogueira', 0, 0.9, 0));
-    for (const s of [-1, 1]) g.add(pernaTorneada(0.87, 'carvalho', s * (comprimento / 2 - 0.12), prof / 2 - 0.1, 0.045));
-    // bancos de linho com encosto curvo e pernas pretas
-    const nB = Math.max(2, Math.round(comprimento / 0.65));
-    for (let i = 0; i < nB; i++) {
-      const x = -comprimento / 2 + (comprimento / nB) * (i + 0.5);
-      const b = new THREE.Group();
-      b.add(almofada(0.42, 0.08, 0.4, 'tecido_claro', 0, 0.72, 0, 0.04));
-      const enc = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.34, 16, 1, true, Math.PI * 0.8, Math.PI * 1.4), material('tecido_claro'));
-      enc.position.set(0, 0.92, 0);
-      b.add(enc);
-      for (const [px, pz] of [[-0.15, -0.15], [0.15, -0.15], [-0.15, 0.15], [0.15, 0.15]]) b.add(cilindro(0.01, 0.7, 'metal_preto', px, 0.35, pz, 6));
-      b.add(caixa(0.3, 0.01, 0.01, 'metal_preto', 0, 0.25, 0.15));
-      b.position.set(x, 0, prof / 2 + 0.28);
+    const P = 0.62; // profundidade dos armários de base
+    const zF = -P / 2; // fundo (encostado à parede)
+    const H = 0.9; // altura da bancada
+    const PS = 0.35; // profundidade dos superiores
+    const yS0 = 1.5; // base dos superiores (0,6 m de frontão acima da bancada)
+    const yS1 = altura - 0.12; // topo dos superiores; a cornija fecha até ao teto
+    const zPorta = zF + P - 0.01; // centro das portas (2 cm) dos armários de base
+    const L = modulos.reduce((s, m) => s + m.l, 0);
+    const alto = (m) => m.tipo === 'despensa' || m.tipo === 'geladeira';
+    const barra = (x, y, z, w = 0.12) => {
+      // puxador em barra (fixo em dois pés)
+      g.add(caixa(w, 0.012, 0.012, puxador, x, y, z + 0.024));
+      for (const s of [-1, 1]) g.add(caixa(0.012, 0.012, 0.026, puxador, x + s * (w / 2 - 0.012), y, z + 0.012));
+    };
+    const gavetas = (xc, w, n = 3, y0 = 0.12, y1 = H - 0.03) => {
+      const h = (y1 - y0) / n;
+      for (let k = 0; k < n; k++) {
+        const y = y0 + h * (k + 0.5);
+        g.add(shaker(w - 0.03, h - 0.02, mat, xc, y, zPorta, null));
+        barra(xc, y, zPorta + 0.01, Math.min(0.16, w * 0.3));
+      }
+    };
+    const portas = (xc, w, y0, y1, z = zPorta, mats = mat) => {
+      const n = w > 0.72 ? 2 : 1;
+      const lw = w / n;
+      for (let i = 0; i < n; i++) {
+        const x = xc - w / 2 + lw * (i + 0.5);
+        g.add(shaker(lw - 0.03, y1 - y0 - 0.02, mats, x, (y0 + y1) / 2, z, null));
+        // puxador vertical junto à borda interior (portas aos pares) ou à direita
+        const lado = n === 2 ? (i === 0 ? 1 : -1) : 1;
+        g.add(caixa(0.012, 0.12, 0.012, puxador, x + lado * (lw / 2 - 0.07), (y0 + y1) / 2 - 0.15, z + 0.024));
+        for (const s of [-1, 1]) g.add(caixa(0.012, 0.012, 0.026, puxador, x + lado * (lw / 2 - 0.07), (y0 + y1) / 2 - 0.15 + s * 0.048, z + 0.012));
+      }
+    };
+    let x = -L / 2;
+    const tampos = []; // tramos contínuos com bancada [x0, x1]
+    const frontoes = []; // tramos de azulejo [x0, x1, hF]
+    for (const m of modulos) {
+      const x0 = x, x1 = x + m.l, xc = (x0 + x1) / 2, w = m.l;
+      x = x1;
+      if (alto(m)) {
+        // armário alto até à cornija
+        if (m.tipo === 'despensa') {
+          g.add(caixa(w, yS1 - 0.1, P - 0.02, mat, xc, 0.1 + (yS1 - 0.1) / 2, zF + (P - 0.02) / 2));
+          g.add(caixa(w, 0.1, P - 0.1, mat, xc, 0.05, zF + (P - 0.1) / 2));
+          portas(xc, w, 0.12, 1.6);
+          portas(xc, w, 1.64, yS1 - 0.02);
+        } else {
+          // geladeira french door em inox embutida entre painéis, com armário por cima
+          g.add(caixa(w, yS1 - 1.86, P, mat, xc, 1.86 + (yS1 - 1.86) / 2, zF + P / 2));
+          portas(xc, w, 1.88, yS1 - 0.02, zF + P + 0.01);
+          for (const s of [-1, 1]) g.add(caixa(0.03, 1.86, P, mat, xc + s * (w / 2 - 0.015), 0.93, zF + P / 2));
+          const wf = w - 0.08;
+          g.add(caixa(wf, 1.78, 0.66, 'inox', xc, 0.02 + 0.89, zF + 0.33));
+          g.add(caixa(wf, 0.03, 0.02, 'metal_preto', xc, 0.02, zF + 0.66)); // grelha inferior
+          const zf = zF + 0.66 + 0.001;
+          g.add(caixa(0.006, 1.0, 0.004, 'metal_preto', xc, 1.32, zf)); // junta das portas
+          g.add(caixa(wf - 0.02, 0.006, 0.004, 'metal_preto', xc, 0.8, zf)); // junta da gaveta do congelador
+          for (const s of [-1, 1]) {
+            g.add(cilindro(0.011, 0.6, 'inox', xc + s * 0.06, 1.3, zf + 0.035, 8));
+            for (const dy of [-0.26, 0.26]) g.add(cilindro(0.008, 0.035, 'inox', xc + s * 0.06, 1.3 + dy, zf + 0.018, 6).rotateX(Math.PI / 2));
+          }
+          g.add(cilindro(0.011, wf - 0.2, 'inox', xc, 0.62, zf + 0.035, 8).rotateZ(Math.PI / 2));
+          for (const s of [-1, 1]) g.add(cilindro(0.008, 0.035, 'inox', xc + s * (wf / 2 - 0.12), 0.62, zf + 0.018, 6).rotateX(Math.PI / 2));
+        }
+        continue;
+      }
+      // ---- módulos de base (com bancada)
+      const hF = m.frontao ?? (m.sup ? yS0 : 1.5);
+      if (frontoes.length && Math.abs(frontoes[frontoes.length - 1][2] - hF) < 1e-6 && Math.abs(frontoes[frontoes.length - 1][1] - x0) < 1e-6) frontoes[frontoes.length - 1][1] = x1;
+      else frontoes.push([x0, x1, hF]);
+      if (m.tipo !== 'fogao') {
+        if (tampos.length && Math.abs(tampos[tampos.length - 1][1] - x0) < 1e-6) tampos[tampos.length - 1][1] = x1;
+        else tampos.push([x0, x1]);
+        g.add(caixa(w, H - 0.1, P - 0.02, mat, xc, 0.1 + (H - 0.1) / 2, zF + (P - 0.02) / 2));
+        g.add(caixa(w, 0.1, P - 0.1, mat, xc, 0.05, zF + (P - 0.1) / 2)); // rodapé recuado
+      }
+      if (m.tipo === 'portas') portas(xc, w, 0.12, H - 0.03);
+      else if (m.tipo === 'gavetas') gavetas(xc, w);
+      else if (m.tipo === 'painel') g.add(caixa(w - 0.01, H - 0.14, 0.02, mat, xc, 0.12 + (H - 0.14) / 2, zPorta));
+      else if (m.tipo === 'pia') {
+        // cuba de avental (farmhouse) em cerâmica: sai à frente das portas, com a bancada interrompida para se ver o interior
+        portas(xc, w, 0.12, 0.66);
+        const wS = w - 0.12, e = 0.03, zA = zF + 0.06, zB = 0.34; // fundo e frente (avental) da cuba
+        const pC = zB - zA;
+        const yB = 0.68;
+        tampos[tampos.length - 1][1] = xc - wS / 2; // bancada só até à cuba…
+        tampos.push([xc + wS / 2, x1]); // …e a seguir
+        g.add(caixaM(wS, 0.04, 0.07, tampo, xc, H + 0.02, zF + 0.035)); // faixa de bancada atrás da cuba
+        g.add(caixa(wS, 0.04, pC, 'ceramica_branca', xc, yB + 0.02, zA + pC / 2)); // fundo
+        g.add(caixa(wS, H + 0.04 - yB, e, 'ceramica_branca', xc, (H + 0.04 + yB) / 2, zB - e / 2)); // avental
+        g.add(caixa(wS, H + 0.04 - yB, e, 'ceramica_branca', xc, (H + 0.04 + yB) / 2, zA + e / 2)); // parede de trás
+        for (const s of [-1, 1]) g.add(caixa(e, H + 0.04 - yB, pC, 'ceramica_branca', xc + s * (wS / 2 - e / 2), (H + 0.04 + yB) / 2, zA + pC / 2)); // laterais
+        g.add(cilindro(0.035, 0.006, 'inox', xc, yB + 0.043, zA + pC / 2, 14)); // ralo
+        // torneira de ponte em latão com pescoço de ganso
+        const zt = zF + 0.07;
+        for (const s of [-1, 1]) g.add(cilindro(0.012, 0.28, 'latao', xc + s * 0.1, H + 0.04 + 0.14, zt, 8));
+        g.add(cilindro(0.012, 0.22, 'latao', xc, H + 0.04 + 0.27, zt, 8).rotateZ(Math.PI / 2)); // ponte
+        g.add(cilindro(0.012, 0.2, 'latao', xc, H + 0.04 + 0.37, zt, 8)); // coluna da bica
+        const bica = new THREE.Mesh(new THREE.TorusGeometry(0.09, 0.011, 8, 24, Math.PI), material('latao'));
+        bica.rotation.y = Math.PI / 2;
+        bica.position.set(xc, H + 0.04 + 0.47, zt + 0.09);
+        bica.castShadow = true;
+        g.add(bica);
+        g.add(cilindro(0.011, 0.14, 'latao', xc, H + 0.04 + 0.4, zt + 0.18, 8));
+        for (const s of [-1, 1]) g.add(cilindro(0.008, 0.06, 'latao', xc + s * 0.1, H + 0.04 + 0.3, zt, 8).rotateX(Math.PI / 2)); // manípulos
+      } else if (m.tipo === 'lava_louca') {
+        // lava-louça em inox com painel de comandos preto
+        g.add(caixa(w - 0.02, H - 0.13, 0.02, 'inox', xc, 0.115 + (H - 0.13) / 2, zPorta));
+        g.add(caixa(w - 0.02, 0.06, 0.004, 'metal_preto', xc, H - 0.08, zPorta + 0.012));
+        g.add(cilindro(0.01, w - 0.16, 'inox', xc, H - 0.15, zPorta + 0.035, 8).rotateZ(Math.PI / 2));
+        for (const s of [-1, 1]) g.add(cilindro(0.008, 0.03, 'inox', xc + s * (w / 2 - 0.1), H - 0.15, zPorta + 0.02, 6).rotateX(Math.PI / 2));
+      } else if (m.tipo === 'fogao') {
+        // fogão preto de piso (dois fornos), bocas com grelhas, manípulos em inox
+        g.add(caixa(w - 0.02, H - 0.04, P - 0.04, 'esmalte_preto', xc, 0.02 + (H - 0.04) / 2, zF + (P - 0.04) / 2));
+        g.add(caixa(w - 0.02, 0.02, P - 0.04, 'esmalte_preto', xc, H - 0.01, zF + (P - 0.04) / 2)); // mesa
+        g.add(caixa(w - 0.02, 0.1, 0.05, 'esmalte_preto', xc, H + 0.05, zF + 0.025)); // frontão baixo
+        const nB = w > 0.8 ? 3 : 2;
+        for (let i = 0; i < nB; i++) {
+          const bx = xc - w / 2 + 0.08 + ((w - 0.16) / nB) * (i + 0.5);
+          for (const bz of [zF + 0.18, zF + 0.42]) {
+            g.add(caixa((w - 0.16) / nB - 0.02, 0.012, 0.22, 'metal_preto', bx, H + 0.006, bz)); // grelha
+            g.add(cilindro(0.035, 0.018, 'metal_preto', bx, H + 0.002, bz, 12)); // boca
+            g.add(cilindro(0.03, 0.006, 'inox', bx, H + 0.012, bz, 12)); // espalhador
+          }
+        }
+        const nK = nB * 2 + 1;
+        for (let k = 0; k < nK; k++) g.add(cilindro(0.018, 0.022, 'inox', xc - w / 2 + 0.1 + ((w - 0.2) / (nK - 1)) * k, H - 0.06, zF + P - 0.02, 12).rotateX(Math.PI / 2));
+        // portas dos fornos (lado a lado) com janela e pega em inox
+        const nF = w > 0.8 ? 2 : 1;
+        const lf = (w - 0.06) / nF;
+        for (let i = 0; i < nF; i++) {
+          const fx = xc - (w - 0.06) / 2 + lf * (i + 0.5);
+          g.add(caixa(lf - 0.02, 0.62, 0.012, 'esmalte_preto', fx, 0.43, zF + P - 0.025));
+          g.add(caixa(lf - 0.12, 0.3, 0.004, 'vidro_forno', fx, 0.38, zF + P - 0.017));
+          g.add(cilindro(0.011, lf - 0.1, 'inox', fx, 0.7, zF + P + 0.02, 8).rotateZ(Math.PI / 2));
+          for (const s of [-1, 1]) g.add(cilindro(0.008, 0.04, 'inox', fx + s * (lf / 2 - 0.08), 0.7, zF + P, 6).rotateX(Math.PI / 2));
+        }
+      }
+      // ---- superiores
+      if (m.sup === 'portas' || m.sup === 'vidro') {
+        const zS = zF + PS + 0.012;
+        if (m.sup === 'portas') {
+          g.add(caixa(w, yS1 - yS0, PS, mat, xc, (yS0 + yS1) / 2, zF + PS / 2));
+          portas(xc, w, yS0 + 0.02, yS1 - 0.02, zS);
+        } else {
+          // carcaça aberta (fundo, lados, topo, base, prateleiras) para se ver a loiça através do vidro
+          g.add(caixa(w, yS1 - yS0, 0.02, mat, xc, (yS0 + yS1) / 2, zF + 0.01));
+          for (const s of [-1, 1]) g.add(caixa(0.02, yS1 - yS0, PS, mat, xc + s * (w / 2 - 0.01), (yS0 + yS1) / 2, zF + PS / 2));
+          for (const y of [yS0 + 0.01, yS1 - 0.01]) g.add(caixa(w, 0.02, PS, mat, xc, y, zF + PS / 2));
+          const nP = 2;
+          for (let k = 1; k <= nP; k++) g.add(caixa(w - 0.04, 0.018, PS - 0.04, mat, xc, yS0 + ((yS1 - yS0) / (nP + 1)) * k, zF + PS / 2));
+          // loiça: pilhas de pratos, tigelas e copos
+          for (let k = 0; k <= nP; k++) {
+            const y = yS0 + 0.02 + ((yS1 - yS0) / (nP + 1)) * k;
+            const nItens = Math.max(1, Math.round(w / 0.3));
+            for (let i = 0; i < nItens; i++) {
+              const ix = xc - w / 2 + 0.06 + ((w - 0.12) / nItens) * (i + 0.5);
+              if ((i + k) % 3 === 0) for (let j = 0; j < 4; j++) g.add(cilindro(0.1, 0.012, 'ceramica_branca', ix, y + 0.006 + j * 0.016, zF + 0.17, 14));
+              else if ((i + k) % 3 === 1) g.add(cilindro(0.045, 0.11, 'vidro', ix, y + 0.055, zF + 0.17, 10, 0.035));
+              else g.add(cilindro(0.075, 0.07, (i + k) % 2 ? 'ceramica_azul' : 'ceramica_branca', ix, y + 0.035, zF + 0.17, 14, 0.045));
+            }
+          }
+          const n = w > 0.72 ? 2 : 1;
+          const lw = w / n;
+          for (let i = 0; i < n; i++) g.add(portaVidro(lw - 0.03, yS1 - yS0 - 0.04, mat, xc - w / 2 + lw * (i + 0.5), (yS0 + yS1) / 2, zS, [1, 2]));
+        }
+      } else if (m.sup === 'coifa') {
+        // coifa branca com guarnição de nogueira, afunilando até ao teto
+        const wc = Math.min(w, 0.9);
+        g.add(caixa(wc, 0.42, 0.5, mat, xc, yS0 + 0.21, zF + 0.25));
+        g.add(caixa(wc + 0.06, 0.1, 0.54, 'nogueira', xc, yS0 + 0.05, zF + 0.27));
+        const forma = new THREE.Shape();
+        forma.moveTo(-wc / 2, yS0 + 0.42);
+        forma.lineTo(wc / 2, yS0 + 0.42);
+        forma.lineTo(wc * 0.32, yS1);
+        forma.lineTo(-wc * 0.32, yS1);
+        forma.closePath();
+        const chamine = new THREE.Mesh(new THREE.ExtrudeGeometry(forma, { depth: 0.42, bevelEnabled: false }), material(mat));
+        chamine.position.set(xc, 0, zF);
+        chamine.castShadow = chamine.receiveShadow = true;
+        g.add(chamine);
+      } else if (m.sup === 'prateleiras') {
+        // prateleiras abertas de nogueira com mãos-francesas pretas
+        for (const y of [yS0 + 0.08, yS0 + 0.5]) {
+          g.add(caixa(w - 0.06, 0.035, 0.28, 'nogueira', xc, y, zF + 0.14));
+          for (const s of [-1, 1]) {
+            g.add(caixa(0.02, 0.16, 0.02, 'metal_preto', xc + s * (w / 2 - 0.12), y - 0.1, zF + 0.01));
+            g.add(caixa(0.02, 0.02, 0.24, 'metal_preto', xc + s * (w / 2 - 0.12), y - 0.028, zF + 0.12));
+          }
+        }
+        g.add(cilindro(0.06, 0.16, 'ceramica_branca', xc - w / 2 + 0.16, yS0 + 0.5 + 0.1, zF + 0.14, 12, 0.05));
+        g.add(planta(xc - w / 2 + 0.16, yS0 + 0.5 + 0.16, zF + 0.14, 0.09, 6));
+        g.add(cilindro(0.05, 0.14, 'vidro', xc + 0.05, yS0 + 0.08 + 0.09, zF + 0.14, 10));
+        g.add(cilindro(0.05, 0.14, 'vidro', xc + 0.2, yS0 + 0.08 + 0.09, zF + 0.14, 10));
+        g.add(caixa(0.02, 0.32, 0.22, 'carvalho', xc + w / 2 - 0.16, yS0 + 0.08 + 0.18, zF + 0.16)); // tábua encostada
+        g.add(caixa(0.22, 0.02, 0.18, 'nogueira', xc - 0.15, yS0 + 0.5 + 0.03, zF + 0.14)); // tábua deitada
+      }
+    }
+    // bancada de mármore contínua (UV em metros para a textura não esticar) e frontão de azulejo
+    for (const [x0, x1] of tampos) g.add(caixaM(x1 - x0 + 0.01, 0.04, P + 0.05, tampo, (x0 + x1) / 2, H + 0.02, zF + (P + 0.05) / 2));
+    for (const [x0, x1, hF] of frontoes) {
+      if (hF <= H + 0.05) continue;
+      const geo = new THREE.PlaneGeometry(x1 - x0, hF - (H + 0.04));
+      const uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * (x1 - x0), uv.getY(i) * (hF - (H + 0.04)));
+      const f = new THREE.Mesh(geo, material('subway'));
+      f.position.set((x0 + x1) / 2, (H + 0.04 + hF) / 2, zF + 0.012);
+      f.receiveShadow = true;
+      g.add(f);
+    }
+    // cornija contínua no topo dos superiores/armários altos (só nos módulos que sobem até ao teto)
+    let xx = -L / 2;
+    const cornija = (a, b, prof) => {
+      g.add(caixa(b - a + 0.04, 0.07, prof + 0.05, mat, (a + b) / 2, altura - 0.085, zF + (prof + 0.05) / 2));
+      g.add(caixa(b - a + 0.08, 0.05, prof + 0.09, mat, (a + b) / 2, altura - 0.025, zF + (prof + 0.09) / 2));
+    };
+    for (const m of modulos) {
+      const x0 = xx, x1 = xx + m.l;
+      xx = x1;
+      const sobe = alto(m) || m.sup === 'portas' || m.sup === 'vidro' || m.sup === 'coifa';
+      if (sobe) {
+        // frisos entre o topo dos superiores e a cornija
+        if (!alto(m)) g.add(caixa(m.l, altura - 0.12 - yS1 + 0.02, PS, mat, (x0 + x1) / 2, yS1 + (altura - 0.12 - yS1) / 2, zF + PS / 2));
+        cornija(x0, x1, alto(m) ? P : PS);
+      }
+    }
+    return { grupo: g, colisores: [col(L / 2, P / 2 + 0.02, 2.4)] };
+  },
+  // ilha do projeto: tampo de nogueira, pernas torneadas do lado dos bancos, gavetas + micro-ondas + forno do lado da cozinha
+  ilha({ comprimento = 2.6, prof = 1.0, tampo = 'nogueira_tampo', material: mat = 'marcenaria_branca', bancos = 4 }) {
+    const g = new THREE.Group();
+    const corpo = prof - 0.35; // parte fechada; os bancos ficam sob a aba do tampo (frente = +z)
+    const zc = -0.175;
+    g.add(caixa(comprimento, 0.78, corpo - 0.02, mat, 0, 0.49, zc));
+    g.add(caixa(comprimento - 0.04, 0.1, corpo - 0.1, mat, 0, 0.05, zc));
+    // lado da cozinha (costas, z = zc - corpo/2): 2 colunas de gavetas, micro-ondas com gaveta, forno
+    const zB = zc - corpo / 2 - 0.011;
+    const esc = comprimento / 2.6;
+    const mods = [['gavetas', 0.6 * esc], ['gavetas', 0.6 * esc], ['micro', 0.7 * esc], ['forno', 0.7 * esc]];
+    let x = -comprimento / 2;
+    const puxador = (px, py, w) => {
+      g.add(caixa(w, 0.012, 0.012, 'metal_preto', px, py, zB - 0.024));
+      for (const s of [-1, 1]) g.add(caixa(0.012, 0.012, 0.026, 'metal_preto', px + s * (w / 2 - 0.012), py, zB - 0.012));
+    };
+    for (const [tipo, w] of mods) {
+      const xc = x + w / 2;
+      x += w;
+      if (tipo === 'gavetas') {
+        for (let k = 0; k < 3; k++) {
+          const y = 0.12 + 0.25 * (k + 0.5);
+          const s = shaker(w - 0.03, 0.23, mat, xc, y, zB, null);
+          s.rotation.y = Math.PI;
+          g.add(s);
+          puxador(xc, y, 0.16);
+        }
+      } else if (tipo === 'micro') {
+        const s = shaker(w - 0.03, 0.3, mat, xc, 0.28, zB, null);
+        s.rotation.y = Math.PI;
+        g.add(s);
+        puxador(xc, 0.28, 0.16);
+        g.add(caixa(w - 0.06, 0.4, 0.02, 'inox', xc, 0.66, zB));
+        g.add(caixa(w - 0.16, 0.28, 0.004, 'vidro_forno', xc - 0.03, 0.66, zB - 0.012));
+        g.add(caixa(0.05, 0.28, 0.004, 'metal_preto', xc + w / 2 - 0.09, 0.66, zB - 0.012));
+      } else {
+        g.add(caixa(w - 0.06, 0.62, 0.02, 'inox', xc, 0.5, zB));
+        g.add(caixa(w - 0.16, 0.3, 0.004, 'vidro_forno', xc, 0.42, zB - 0.012));
+        g.add(caixa(w - 0.08, 0.05, 0.004, 'metal_preto', xc, 0.76, zB - 0.012));
+        g.add(cilindro(0.011, w - 0.16, 'inox', xc, 0.66, zB - 0.035, 8).rotateZ(Math.PI / 2));
+        for (const s of [-1, 1]) g.add(cilindro(0.008, 0.035, 'inox', xc + s * (w / 2 - 0.1), 0.66, zB - 0.018, 6).rotateX(Math.PI / 2));
+        for (let k = 0; k < 3; k++) g.add(cilindro(0.012, 0.02, 'inox', xc - 0.15 + k * 0.15, 0.82, zB - 0.01, 10).rotateX(Math.PI / 2));
+      }
+    }
+    // lado dos bancos e laterais: painéis shaker
+    const nP = Math.max(2, Math.round(comprimento / 0.85));
+    for (let i = 0; i < nP; i++) g.add(shaker(comprimento / nP - 0.06, 0.66, mat, -comprimento / 2 + (comprimento / nP) * (i + 0.5), 0.49, zc + corpo / 2 + 0.001, null, 0.012));
+    for (const s of [-1, 1]) g.add(shaker(corpo - 0.08, 0.66, mat, s * (comprimento / 2 + 0.001), 0.49, zc, null, 0.012).rotateY(Math.PI / 2));
+    // tampo de nogueira (tábuas coladas, UV em metros) e pernas torneadas sob a aba
+    g.add(caixaM(comprimento + 0.1, 0.05, prof + 0.05, tampo, 0, 0.905, 0));
+    for (const s of [-1, 1]) pernaTorneadaEm(g, 0.88, 'nogueira', s * (comprimento / 2 - 0.1), prof / 2 - 0.09, 0.045);
+    // bancos estofados em linho com pernas pretas
+    for (let i = 0; i < bancos; i++) {
+      const bx = -comprimento / 2 + (comprimento / bancos) * (i + 0.5);
+      const b = bancoEstofado('linho_taupe');
+      b.position.set(bx, 0, prof / 2 + 0.22);
       b.rotation.y = Math.PI;
       g.add(b);
     }
-    // decoração: tábua, tigela e jarro
-    g.add(caixa(0.45, 0.02, 0.28, 'carvalho', -0.6, 0.94, -0.2));
-    g.add(cilindro(0.12, 0.07, 'nogueira', -0.55, 0.965, -0.2, 16, 0.08));
-    g.add(cilindro(0.09, 0.28, 'ceramica_branca', 0.5, 1.07, -0.25, 14, 0.06));
-    g.add(planta(0.5, 1.2, -0.25, 0.16, 6));
-    return { grupo: g, colisores: [col(comprimento / 2 + 0.05, prof / 2 + 0.05, 0.95), col(comprimento / 2, 0.25, 0.75, 0, -(prof / 2 + 0.28))] };
+    // decoração: tábua com pão, tigela de madeira, jarro de eucalipto
+    g.add(caixa(0.42, 0.02, 0.26, 'carvalho', -0.75, 0.94, -0.2));
+    g.add(cilindro(0.12, 0.07, 'nogueira', 0.75, 0.965, -0.22, 16, 0.09));
+    g.add(vasoEucalipto(0.05, 0.93, -0.22));
+    return { grupo: g, colisores: [col(comprimento / 2 + 0.05, prof / 2 + 0.05, 0.95), col(comprimento / 2, 0.25, 0.75, 0, -(prof / 2 + 0.25))] };
+  },
+  // pratos decorativos de cerâmica na parede (composição de 4, frente = +z)
+  pratos_parede() {
+    const g = new THREE.Group();
+    const pratos = [[-0.18, 0.12, 0.13, 'ceramica_branca', 'ceramica_azul'], [0.14, 0.18, 0.1, 'ceramica_azul', 'ceramica_branca'], [0.02, -0.12, 0.15, 'ceramica_branca', 'nogueira'], [0.28, -0.06, 0.09, 'ceramica_branca', 'ceramica_azul']];
+    for (const [x, y, r, cor, aro] of pratos) {
+      g.add(cilindro(r, 0.014, cor, x, y, 0.008, 28).rotateX(Math.PI / 2));
+      g.add(toro(r * 0.72, 0.005, aro, x, y, 0.017, 32).rotateX(Math.PI / 2));
+      g.add(cilindro(r * 0.3, 0.004, aro, x, y, 0.017, 20).rotateX(Math.PI / 2));
+    }
+    return { grupo: g, colisores: [] };
+  },
+  // jarro de cerâmica com ramos de eucalipto
+  vaso_eucalipto() {
+    return { grupo: vasoEucalipto(0, 0, 0), colisores: [] };
   },
   armario_cozinha({ largura = 2.4, pia = false, fogao = false, tanque = false, semSuperior = false, vidro = false, material: mat = 'marcenaria_branca', matSuperior = 'marcenaria_branca' }) {
     const g = new THREE.Group();

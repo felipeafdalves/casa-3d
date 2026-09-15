@@ -363,7 +363,7 @@ export class Construtor {
           fin.position.set(sx * (largura / 2 + 0.35), topoC, zc);
           grupo.add(fin);
           const largP = Math.min(0.55, largura * 0.32);
-          const altP = topoC - 0.02 + h0 - nivel; // até ao chão
+          const altP = v.cortinaCurta ? topoC - 0.02 + 0.12 : topoC - 0.02 + h0 - nivel; // até ao chão (ou até abaixo do peitoril: cozinha)
           const geo = new THREE.PlaneGeometry(largP, altP, 28, 1);
           const pos = geo.attributes.position;
           for (let i = 0; i < pos.count; i++) pos.setZ(i, Math.sin((pos.getX(i) / largP) * Math.PI * 7) * 0.035);

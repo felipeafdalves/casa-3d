@@ -100,6 +100,8 @@ export const ajustes = {
   // Vãos a substituir/adicionar. "remover" apaga vãos extraídos cujo centro esteja a < 0,35 m do ponto.
   // (a janela de 3,6 m do DWG na parede leste do jantar dá lugar a uma janela pequena sobre o aparador, como no projeto de interiores)
   vaosRemover: { terreo: [[9.09, 7.8], [4.0, 6.36], [7.28, -2.75], [9.09, 12.23]], superior: [[4.0, 2.12], [5.48, 0.62]] },
+  // Propriedades extra em vãos existentes: a janela da cozinha tem cortinas curtas (até ao peitoril, sobre a bancada).
+  vaosAjustar: { terreo: [{ perto: [3.6, 15.5], props: { cortinaCurta: true } }] },
   vaosExtra: {
     subsolo: [{ tipo: 'porta', a: [4.05, 5.7], b: [4.75, 5.7], altura: 2.1, peitoril: 0 }],
     terreo: [
@@ -254,15 +256,25 @@ export const ajustes = {
     { tipo: 'glb', url: './modelos/GlassVaseFlowers.glb', pos: [7.0, 12.4], rot: 0, pav: 'terreo', z: 0.78, altura: 0.42, colisor: false },
     { tipo: 'cristaleira', pos: [8.75, 12.4], rot: -90, pav: 'terreo', largura: 1.25 }, // centrada com a mesa de jantar
     { tipo: 'arandela', pos: [9.0, 10.1], rot: -90, pav: 'terreo', z: 1.8 },
-    // ---- Cozinha: armários shaker brancos, ilha com tampo de madeira e pernas torneadas, lanternas
+    // ---- Cozinha (projeto de interiores, p. 30–35): parede oeste de sul para norte = despensa, geladeira com armário por cima,
+    //      superiores de vidro, fogão preto com coifa, prateleiras de nogueira no canto; parede norte = cuba farmhouse sob a janela e lava-louça
+    { tipo: 'cozinha_linear', pos: [2.245, 12.87], rot: 90, pav: 'terreo', altura: 2.82, modulos: [
+      { tipo: 'despensa', l: 0.9 }, { tipo: 'geladeira', l: 0.95 },
+      { tipo: 'gavetas', l: 0.6, sup: 'vidro' }, { tipo: 'portas', l: 0.6, sup: 'vidro' },
+      { tipo: 'fogao', l: 0.9, sup: 'coifa' }, { tipo: 'portas', l: 1.14, sup: 'prateleiras' },
+    ] },
+    { tipo: 'cozinha_linear', pos: [4.025, 15.105], rot: 0, pav: 'terreo', altura: 2.82, modulos: [
+      { tipo: 'portas', l: 0.6, frontao: 1.18 }, { tipo: 'pia', l: 0.9, frontao: 1.18 }, { tipo: 'gavetas', l: 0.6, frontao: 1.18 },
+      { tipo: 'lava_louca', l: 0.6, frontao: 1.5 }, { tipo: 'portas', l: 0.24, frontao: 1.5 },
+    ] },
     { tipo: 'ilha', pos: [4.3, 12.0], rot: 90, pav: 'terreo', comprimento: 2.6, prof: 1.0 },
-    { tipo: 'armario_cozinha', pos: [2.25, 13.0], rot: 90, pav: 'terreo', largura: 3.0, fogao: true, vidro: true },
-    { tipo: 'geladeira', pos: [2.3, 11.0], rot: 90, pav: 'terreo' },
-    { tipo: 'armario_cozinha', pos: [3.6, 15.08], rot: 0, pav: 'terreo', largura: 2.34, pia: true, semSuperior: true },
-    { tipo: 'glb', url: './modelos/AnisotropyBarnLamp.glb', pos: [4.3, 11.3], pav: 'terreo', z: 2.0, altura: 0.55, colisor: false },
-    { tipo: 'glb', url: './modelos/AnisotropyBarnLamp.glb', pos: [4.3, 12.7], pav: 'terreo', z: 2.0, altura: 0.55, colisor: false },
+    { tipo: 'pendente', pos: [4.3, 11.35], pav: 'terreo', z: 2.35, corrente: 0.47 },
+    { tipo: 'pendente', pos: [4.3, 12.65], pav: 'terreo', z: 2.35, corrente: 0.47 },
+    { tipo: 'pratos_parede', pos: [5.15, 15.4], rot: 0, pav: 'terreo', z: 1.72 },
+    { tipo: 'arandela', pos: [5.15, 15.37], rot: 0, z: 2.15, pav: 'terreo' },
     { tipo: 'arandela', pos: [2.1, 15.37], rot: 0, pav: 'terreo', z: 1.95 },
-    { tipo: 'arandela', pos: [5.2, 15.37], rot: 0, pav: 'terreo', z: 1.95 },
+    { tipo: 'glb', url: './modelos/GlassVaseFlowers.glb', pos: [5.05, 15.1], rot: 0, pav: 'terreo', z: 0.94, altura: 0.5, colisor: false },
+    { tipo: 'quadro', pos: [1.95, 9.17], rot: 90, pav: 'terreo', z: 1.55, largura: 0.55, altura: 0.7, cor: '#6e6a58', moldura: 'metal_preto' },
     // ---- Lavanderia: vigas de madeira, subway, armário de madeira com tanque, máquinas
     { tipo: 'armario_cozinha', pos: [0.42, 12.0], rot: 90, pav: 'terreo', largura: 3.0, tanque: true, semSuperior: true, material: 'carvalho' },
     { tipo: 'maquina', pos: [0.75, 9.15], rot: 180, pav: 'terreo' },
