@@ -79,6 +79,8 @@ export const ajustes = {
       { a: [9.09, 6.85], b: [9.09, 8.75], esp: 0.17, material: 'pedra' },
       // parede entre a circulação e o BWC social (com porta), não extraída
       { a: [5.48, 1.075], b: [5.48, 1.1], esp: 0.17 },
+      // parede leste do jantar: fecha o troço onde o DWG tinha a janela de 3,6 m (fica só a janela ao lado da cristaleira)
+      { a: [9.09, 10.434], b: [9.09, 13.05], esp: 0.17 },
       // bay window da brinquedoteca (o DWG desenha-a com lados oblíquos, que a extração ortogonal não apanha)
       { a: [5.823, -2.75], b: [6.02, -3.2], esp: 0.17 },
       { a: [6.02, -3.2], b: [6.29, -3.2], esp: 0.17 },
@@ -104,7 +106,7 @@ export const ajustes = {
       { tipo: 'janela', a: [6.29, -3.2], b: [8.29, -3.2], altura: 1.75, peitoril: 0.5 }, // bay window
       { tipo: 'janela', a: [9.09, 5.85], b: [9.09, 6.85], altura: 1.65, peitoril: 0.6 },
       { tipo: 'janela', a: [9.09, 8.75], b: [9.09, 9.75], altura: 1.65, peitoril: 0.6 },
-      { tipo: 'janela', a: [9.09, 13.15], b: [9.09, 14.15], altura: 1.65, peitoril: 0.6 }, // janela ao lado da cristaleira, igual às outras
+      { tipo: 'janela', a: [9.09, 13.05], b: [9.09, 14.03], altura: 1.65, peitoril: 0.6 }, // janela ao lado da cristaleira, igual às outras
       { tipo: 'porta_vidro', a: [5.72, 15.5], b: [8.35, 15.5], altura: 2.25, peitoril: 0 },
       { tipo: 'porta', a: [1.85, 9.523], b: [1.85, 10.323], altura: 2.1, peitoril: 0 },
       { tipo: 'porta_vidro', a: [5.48, -1.47], b: [5.48, -0.11], altura: 2.1, peitoril: 0 },
