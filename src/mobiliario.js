@@ -610,6 +610,17 @@ const pecas = {
     const pBase = 0.62;
     const pCima = 0.36;
     const zFundo = -pCima / 2; // costas do móvel encostadas à parede
+    // armários base dos lados (fundos, com portas shaker e puxadores de bronze); o centro fica aberto para a secretária
+    for (const s of [-1, 1]) {
+      const xc = s * lw;
+      g.add(caixa(lw, 0.9, pBase, 'marcenaria_branca', xc, 0.45, zFundo + pBase / 2));
+      for (let k = 0; k < 2; k++) g.add(shaker(lw / 2 - 0.05, 0.72, 'marcenaria_branca', xc - lw / 4 + (lw / 2) * k, 0.45, zFundo + pBase + 0.01, 'bronze'));
+    }
+    // tampo contínuo de nogueira (a bancada) e secretária central com painel de fundo e gaveta
+    g.add(caixa(largura + 0.04, 0.045, pBase + 0.05, 'nogueira', 0, 0.92, zFundo + (pBase + 0.05) / 2 - 0.02));
+    g.add(caixa(lw - 0.04, 0.9, 0.05, 'marcenaria_branca', 0, 0.45, zFundo + 0.03));
+    g.add(caixa(lw - 0.2, 0.1, 0.5, 'marcenaria_branca', 0, 0.83, zFundo + 0.3));
+    g.add(caixa(0.25, 0.02, 0.02, 'bronze', 0, 0.83, zFundo + 0.56));
     // corpo superior: painel de fundo ripado, laterais/topo, e um painel frontal com os três arcos recortados
     const H = altura - 0.94;
     const y0 = 0.94;
@@ -666,6 +677,7 @@ const pecas = {
       cad.add(p);
     }
     cad.position.set(0, 0, zFundo + pBase + 0.35);
+    cad.rotation.y = Math.PI; // virada para a secretária (costas para a sala)
     g.add(cad);
     return {
       grupo: g,

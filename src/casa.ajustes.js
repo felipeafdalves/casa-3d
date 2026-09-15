@@ -96,13 +96,15 @@ export const ajustes = {
   },
 
   // Vãos a substituir/adicionar. "remover" apaga vãos extraídos cujo centro esteja a < 0,35 m do ponto.
-  vaosRemover: { terreo: [[9.09, 7.8], [4.0, 6.36], [7.28, -2.75]], superior: [[4.0, 2.12], [5.48, 0.62]] },
+  // (a janela de 3,6 m do DWG na parede leste do jantar dá lugar a uma janela pequena sobre o aparador, como no projeto de interiores)
+  vaosRemover: { terreo: [[9.09, 7.8], [4.0, 6.36], [7.28, -2.75], [9.09, 12.23]], superior: [[4.0, 2.12], [5.48, 0.62]] },
   vaosExtra: {
     subsolo: [{ tipo: 'porta', a: [4.05, 5.7], b: [4.75, 5.7], altura: 2.1, peitoril: 0 }],
     terreo: [
       { tipo: 'janela', a: [6.29, -3.2], b: [8.29, -3.2], altura: 1.75, peitoril: 0.5 }, // bay window
       { tipo: 'janela', a: [9.09, 5.85], b: [9.09, 6.85], altura: 1.65, peitoril: 0.6 },
       { tipo: 'janela', a: [9.09, 8.75], b: [9.09, 9.75], altura: 1.65, peitoril: 0.6 },
+      { tipo: 'janela', a: [9.09, 11.6], b: [9.09, 13.2], altura: 1.0, peitoril: 1.45 }, // janela pequena sobre o aparador do jantar
       { tipo: 'porta_vidro', a: [5.72, 15.5], b: [8.35, 15.5], altura: 2.25, peitoril: 0 },
       { tipo: 'porta', a: [1.85, 9.523], b: [1.85, 10.323], altura: 2.1, peitoril: 0 },
       { tipo: 'porta_vidro', a: [5.48, -1.47], b: [5.48, -0.11], altura: 2.1, peitoril: 0 },
@@ -233,8 +235,9 @@ export const ajustes = {
     { tipo: 'estante_arcos', pos: [7.29, 3.17], rot: 180, pav: 'terreo', largura: 3.3, altura: 2.7 },
     { tipo: 'tapete_redondo', pos: [7.45, 5.2], pav: 'terreo', raio: 1.05 },
     // modelos reais (glTF, Khronos Sample Assets, CC-BY 4.0): poltronas de tecido com sheen
-    { tipo: 'glb', url: './modelos/SheenChair.glb', pos: [6.9, 5.25], rot: 20, pav: 'terreo', largura: 0.82 },
-    { tipo: 'glb', url: './modelos/SheenChair.glb', pos: [8.0, 5.25], rot: -20, pav: 'terreo', largura: 0.82 },
+    // (a frente deste modelo é +x: rotY −90 põe-na em +z; viradas para o fundo da casa, norte)
+    { tipo: 'glb', url: './modelos/SheenChair.glb', pos: [6.9, 5.25], rot: 170, rotY: -90, pav: 'terreo', largura: 0.82 },
+    { tipo: 'glb', url: './modelos/SheenChair.glb', pos: [8.0, 5.25], rot: 190, rotY: -90, pav: 'terreo', largura: 0.82 },
     { tipo: 'glb', url: './modelos/DiffuseTransmissionPlant.glb', pos: [8.45, 4.3], rot: 0, pav: 'terreo', altura: 1.1 },
     { tipo: 'mesa_lateral', pos: [7.45, 4.6], pav: 'terreo' },
     { tipo: 'lustre_roda', pos: [7.0, 7.6], pav: 'terreo', z: 4.5, raio: 0.65 },
@@ -245,7 +248,7 @@ export const ajustes = {
     { tipo: 'tapete', pos: [7.0, 12.4], rot: 0, pav: 'terreo', dims: [2.8, 4.0], material: 'tapete' },
     { tipo: 'lustre_velas', pos: [7.0, 12.4], pav: 'terreo', z: 4.3, corrente: 1.3 },
     { tipo: 'glb', url: './modelos/GlassVaseFlowers.glb', pos: [7.0, 12.4], rot: 0, pav: 'terreo', z: 0.78, altura: 0.42, colisor: false },
-    { tipo: 'cristaleira', pos: [8.75, 14.7], rot: -90, pav: 'terreo', largura: 1.25 },
+    { tipo: 'comoda', pos: [8.75, 12.4], rot: -90, pav: 'terreo', largura: 2.0, material: 'nogueira' }, // aparador centrado com a mesa
     { tipo: 'arandela', pos: [9.0, 10.1], rot: -90, pav: 'terreo', z: 1.8 },
     // ---- Cozinha: armários shaker brancos, ilha com tampo de madeira e pernas torneadas, lanternas
     { tipo: 'ilha', pos: [4.3, 12.0], rot: 90, pav: 'terreo', comprimento: 2.6, prof: 1.0 },
