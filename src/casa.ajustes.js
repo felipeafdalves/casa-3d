@@ -250,10 +250,9 @@ export const ajustes = {
     { tipo: 'porta_celeiro', pos: [4.16, 5.3], rot: 90, pav: 'terreo', largura: 1.0, altura: 2.2 },
     { tipo: 'arandela', pos: [9.0, 4.5], rot: -90, pav: 'terreo', z: 1.8 },
     // ---- Sala de jantar: mesa de fazenda com cadeiras de bouclé, lustre de velas, cristaleira
-    { tipo: 'mesa_jantar', pos: [7.0, 12.4], rot: 90, pav: 'terreo', comprimento: 2.6, largura: 1.05, lugares: 8 },
-    { tipo: 'tapete', pos: [7.0, 12.4], rot: 0, pav: 'terreo', dims: [2.8, 4.0], material: 'tapete' },
+    { tipo: 'mesa_jantar', pos: [7.0, 12.4], rot: 90, pav: 'terreo', comprimento: 2.6, largura: 1.05, lugares: 8 }, // madeira escura, 3 cadeiras por lado + cabeceiras (sem tapete, como nas pranchas 27–28)
     { tipo: 'lustre_velas', pos: [7.0, 12.4], pav: 'terreo', z: 4.3, corrente: 1.3 },
-    { tipo: 'glb', url: './modelos/GlassVaseFlowers.glb', pos: [7.0, 12.4], rot: 0, pav: 'terreo', z: 0.78, altura: 0.42, colisor: false },
+    { tipo: 'glb', url: './modelos/DiffuseTransmissionPlant.glb', pos: [8.6, 13.75], pav: 'terreo', largura: 0.8, colisor: false }, // planta entre a cristaleira e a janela
     { tipo: 'cristaleira', pos: [8.75, 12.4], rot: -90, pav: 'terreo', largura: 1.25 }, // centrada com a mesa de jantar
     { tipo: 'arandela', pos: [9.0, 10.1], rot: -90, pav: 'terreo', z: 1.8 },
     // ---- Cozinha (projeto de interiores, p. 30–35): parede oeste de sul para norte = despensa, geladeira com armário por cima,

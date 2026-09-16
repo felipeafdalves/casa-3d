@@ -177,6 +177,34 @@ function bancoEstofado(mat = 'linho_taupe') {
   return b;
 }
 
+/** Cadeira de jantar estofada (assento e encosto curvo em linho, pernas de madeira escura afuniladas). Frente = +z. */
+function cadeiraEstofada(mat = 'linho_claro', madeira = 'nogueira_escura') {
+  const c = new THREE.Group();
+  c.add(caixa(0.46, 0.03, 0.46, madeira, 0, 0.41, 0));
+  c.add(almofada(0.5, 0.09, 0.5, mat, 0, 0.47, 0, 0.05));
+  const mE = M(mat).clone();
+  mE.side = THREE.DoubleSide;
+  // encosto em escudo: arco curto (só as costas), com espessura dada por duas cascas
+  for (const [r, y] of [[0.25, 0.75], [0.22, 0.75]]) {
+    const enc = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.46, 20, 1, true, Math.PI * 0.55, Math.PI * 0.9), mE);
+    enc.position.set(0, y, 0.0);
+    enc.castShadow = true;
+    c.add(enc);
+  }
+  const aro = new THREE.Mesh(new THREE.TorusGeometry(0.235, 0.016, 6, 20, Math.PI * 0.9), mE);
+  aro.rotation.x = Math.PI / 2;
+  aro.rotation.z = -Math.PI * 0.05;
+  aro.position.set(0, 0.98, 0.0);
+  c.add(aro);
+  for (const [px, pz] of [[-0.19, -0.19], [0.19, -0.19], [-0.19, 0.19], [0.19, 0.19]]) {
+    const perna = cilindro(0.016, 0.42, madeira, px, 0.21, pz, 8, 0.024);
+    perna.rotation.z = -px * 0.15;
+    perna.rotation.x = pz * 0.15;
+    c.add(perna);
+  }
+  return c;
+}
+
 /** Jarro de cerâmica branca com ramos de eucalipto (folhas redondas cinza-esverdeadas). */
 function vasoEucalipto(x, y, z) {
   const g = new THREE.Group();
@@ -882,35 +910,40 @@ const pecas = {
   },
 
   // ---------- jantar e cozinha
-  mesa_jantar({ comprimento = 2.4, largura = 1.05, lugares = 8 }) {
+  mesa_jantar({ comprimento = 2.4, largura = 1.05, lugares = 8, material: mat = 'nogueira_escura', tecido: tec = 'linho_claro' }) {
+    // mesa de madeira escura com tampo grosso, saia e pernas torneadas; cadeiras estofadas nos lados e nas cabeceiras
     const g = new THREE.Group();
-    g.add(caixa(comprimento, 0.06, largura, 'nogueira', 0, 0.75, 0));
-    g.add(caixa(comprimento - 0.3, 0.1, largura - 0.3, 'nogueira', 0, 0.67, 0));
-    for (const [x, z] of [[-comprimento / 2 + 0.2, -largura / 2 + 0.2], [comprimento / 2 - 0.2, -largura / 2 + 0.2], [-comprimento / 2 + 0.2, largura / 2 - 0.2], [comprimento / 2 - 0.2, largura / 2 - 0.2]]) g.add(pernaTorneada(0.66, 'nogueira', x, z, 0.045));
-    // cadeiras de bouclé com encosto curvo
-    const porLado = Math.floor(lugares / 2);
-    for (let i = 0; i < porLado; i++) {
-      for (const s of [-1, 1]) {
-        const x = -comprimento / 2 + (comprimento / porLado) * (i + 0.5);
-        const c = new THREE.Group();
-        c.add(almofada(0.46, 0.1, 0.46, 'boucle', 0, 0.45, 0, 0.05));
-        const enc = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.42, 16, 1, true, Math.PI * 0.8, Math.PI * 1.4), material('boucle'));
-        enc.position.set(0, 0.7, 0.02);
-        c.add(enc);
-        for (const [px, pz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) c.add(cilindro(0.018, 0.42, 'nogueira', px, 0.21, pz, 8));
-        c.position.set(x, 0, s * (largura / 2 + 0.3));
-        c.rotation.y = s > 0 ? Math.PI : 0;
-        g.add(c);
-        // louça
-        g.add(cilindro(0.13, 0.01, 'ceramica_branca', x, 0.785, s * (largura / 2 - 0.22), 20));
-        g.add(cilindro(0.09, 0.03, 'ceramica_branca', x, 0.8, s * (largura / 2 - 0.22), 16, 0.06));
-        g.add(cilindro(0.03, 0.14, 'vidro', x + 0.15, 0.85, s * (largura / 2 - 0.3), 10, 0.025));
-      }
+    g.add(caixaM(comprimento, 0.05, largura, mat, 0, 0.745, 0));
+    g.add(caixa(comprimento - 0.24, 0.1, largura - 0.24, mat, 0, 0.67, 0));
+    for (const [x, z] of [[-comprimento / 2 + 0.16, -largura / 2 + 0.16], [comprimento / 2 - 0.16, -largura / 2 + 0.16], [-comprimento / 2 + 0.16, largura / 2 - 0.16], [comprimento / 2 - 0.16, largura / 2 - 0.16]]) {
+      g.add(pernaTorneada(0.62, mat, x, z, 0.05));
+      g.add(caixa(0.09, 0.12, 0.09, mat, x, 0.62, z)); // bloco quadrado no topo da perna
     }
-    g.add(caixa(comprimento - 0.6, 0.01, 0.35, 'tecido_claro', 0, 0.785, 0, false));
-    g.add(cilindro(0.06, 0.2, 'bronze', 0, 0.88, 0, 12, 0.04));
-    g.add(planta(0, 0.98, 0, 0.14, 6));
-    return { grupo: g, colisores: [col(comprimento / 2 + 0.35, largura / 2 + 0.55, 0.9)] };
+    const lugar = (x, z, ang) => {
+      const c = cadeiraEstofada(tec, mat);
+      c.position.set(x, 0, z);
+      c.rotation.y = ang;
+      g.add(c);
+      // loiça: prato com sousplat escuro, copo e guardanapo
+      const px = x - Math.sin(ang) * 0.62, pz = z - Math.cos(ang) * 0.62; // dentro da mesa, à frente da cadeira
+      g.add(cilindro(0.16, 0.008, mat, px, 0.774, pz, 22));
+      g.add(cilindro(0.13, 0.01, 'ceramica_branca', px, 0.783, pz, 22));
+      g.add(cilindro(0.09, 0.03, 'ceramica_branca', px, 0.8, pz, 16, 0.06));
+      g.add(cilindro(0.03, 0.14, 'vidro', px + Math.cos(ang) * 0.2, 0.85, pz - Math.sin(ang) * 0.2, 10, 0.025));
+      g.add(caixa(0.12, 0.01, 0.18, 'tecido_claro', px - Math.cos(ang) * 0.22, 0.775, pz + Math.sin(ang) * 0.22, false).rotateY(ang));
+    };
+    const porLado = Math.max(1, Math.floor((lugares - 2) / 2));
+    for (let i = 0; i < porLado; i++) {
+      const x = -comprimento / 2 + (comprimento / porLado) * (i + 0.5);
+      lugar(x, largura / 2 + 0.28, Math.PI); // lado +z: cadeira virada para a mesa (frente = -z)
+      lugar(x, -largura / 2 - 0.28, 0);
+    }
+    lugar(comprimento / 2 + 0.3, 0, -Math.PI / 2); // cabeceiras
+    lugar(-comprimento / 2 - 0.3, 0, Math.PI / 2);
+    // centro de mesa: caminho de linho e jarro de eucalipto
+    g.add(caixa(comprimento - 0.7, 0.008, 0.38, 'tecido_claro', 0, 0.774, 0, false));
+    g.add(vasoEucalipto(0, 0.77, 0));
+    return { grupo: g, colisores: [col(comprimento / 2 + 0.55, largura / 2 + 0.55, 0.9)] };
   },
   cristaleira({ largura = 1.6 }) {
     const g = new THREE.Group();

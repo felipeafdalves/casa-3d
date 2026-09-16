@@ -21,7 +21,7 @@ com acabamentos baseados no **projeto de interiores** (Bruna Varhau, REV01). Cor
   por cima, superiores de vidro com loiça, fogão preto de dois fornos com coifa de guarnição de nogueira, prateleiras
   abertas, cuba de avental com torneira de ponte em latão, lava-louça, bancada de mármore e frontão subway), ilha com
   tampo de nogueira, micro-ondas e forno do lado da cozinha, banquetas estofadas e lanternas,
-  mesa de fazenda com cadeiras de bouclé e lustre de velas, cristaleira, lavanderia com vigas e armário de madeira,
+  mesa de jantar de nogueira escura com cadeiras estofadas de encosto em escudo e lustre de velas, cristaleira, lavanderia com vigas e armário de madeira,
   banheiros com bancada sálvia, mármore e box em espinha de peixe, escritório com estante embutida e sofá de veludo,
   camas de nogueira com colunas e mesas de cabeceira, cama-baú infantil, garagem com dois carros, portão preto estilo
   celeiro, chesterfield de couro, painel de TV, bar e adega em grelha metálica.
